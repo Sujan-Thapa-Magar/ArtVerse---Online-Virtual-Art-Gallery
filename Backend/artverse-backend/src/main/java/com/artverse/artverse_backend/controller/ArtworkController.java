@@ -1,4 +1,110 @@
 package com.artverse.artverse_backend.controller;
 
+import com.artverse.artverse_backend.dto.ArtworkUploadRequest;
+import com.artverse.artverse_backend.model.Artwork;
+import com.artverse.artverse_backend.service.ArtworkService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/artworks")
+@CrossOrigin(origins = "http://localhost:5173")
 public class ArtworkController {
+
+    @Autowired
+    private ArtworkService artworkService;
+
+    // -----------------------------------------------
+    // POST /api/artworks/upload
+    // Upload a new artwork (only logged-in artists)
+    // -----------------------------------------------
+    @PostMapping("/upload")
+    public ResponseEntity<?> uploadArtwork(
+            @RequestParam("title") String title,
+            @RequestParam("description") String description,
+            @RequestParam(value = "medium", required = false) String medium,
+            @RequestParam(value = "dimensions", required = false) String dimensions,
+            @RequestParam(value = "price", required = false) Double price,
+            @RequestParam(value = "isForSale", defaultValue = "false") boolean isForSale,
+            @RequestParam(value = "category", required = false) String category,
+            @RequestParam("image") MultipartFile imageFile,
+            Authentication authentication) {
+
+        try {
+            // Get the email of the logged-in user from the JWT token
+            String artistEmail = authentication.getName();
+
+            // Build the request object
+            ArtworkUploadRequest request = new ArtworkUploadRequest();
+            request.setTitle(title);
+            request.setDescription(description);
+            request.setMedium(medium);
+            request.setDimensions(dimensions);
+            request.setPrice(price);
+            request.setForSale(isForSale);
+            request.setCategory(category);
+
+            // Call the service to save the artwork
+            Artwork saved = artworkService.uploadArtwork(request, imageFile, artistEmail);
+
+            return ResponseEntity.ok(saved);
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Upload failed: " + e.getMessage());
+        }
+    }
+
+    // -----------------------------------------------
+    // GET /api/artworks
+    // Get all artworks (for the public gallery)
+    // -----------------------------------------------
+    @GetMapping
+    public ResponseEntity<List<Artwork>> getAllArtworks() {
+        List<Artwork> artworks = artworkService.getAllArtworks();
+        return ResponseEntity.ok(artworks);
+    }
+
+    // -----------------------------------------------
+    // GET /api/artworks/{id}
+    // Get a single artwork by its ID
+    // -----------------------------------------------
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getArtworkById(@PathVariable Long id) {
+        try {
+            Artwork artwork = artworkService.getArtworkById(id);
+            return ResponseEntity.ok(artwork);
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    // -----------------------------------------------
+    // GET /api/artworks/artist/{artistId}
+    // Get all artworks by a specific artist
+    // -----------------------------------------------
+    @GetMapping("/artist/{artistId}")
+    public ResponseEntity<List<Artwork>> getArtworksByArtist(@PathVariable Long artistId) {
+        List<Artwork> artworks = artworkService.getArtworksByArtist(artistId);
+        return ResponseEntity.ok(artworks);
+    }
+
+    // -----------------------------------------------
+    // DELETE /api/artworks/{id}
+    // Delete an artwork by ID
+    // -----------------------------------------------
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteArtwork(@PathVariable Long id, Authentication authentication) {
+        try {
+            String artistEmail = authentication.getName();
+            artworkService.deleteArtwork(id, artistEmail);
+            return ResponseEntity.ok("Artwork deleted successfully.");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }
