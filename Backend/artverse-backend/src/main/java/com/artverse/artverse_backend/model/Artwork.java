@@ -1,5 +1,6 @@
 package com.artverse.artverse_backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -12,8 +13,9 @@ public class Artwork {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "artist_id", nullable = false)
+    @JsonIgnoreProperties({"password", "hibernateLazyInitializer", "handler"})
     private User artist;
 
     @Column(nullable = false)
@@ -25,11 +27,11 @@ public class Artwork {
     @Column(nullable = false, name = "image_url")
     private String imageUrl;
 
-    private String category;      // e.g. "Painting", "Sculpture"
+    private String category;
 
-    private String medium;        // e.g. "Oil on canvas"
+    private String medium;
 
-    private String dimensions;    // e.g. "24x36 inches"
+    private String dimensions;
 
     @Column(precision = 10, scale = 2)
     private BigDecimal price;

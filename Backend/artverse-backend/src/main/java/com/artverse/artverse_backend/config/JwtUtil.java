@@ -12,10 +12,12 @@ import java.util.Date;
 @Component
 public class JwtUtil {
 
-    private final Key key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
-    private final long EXPIRATION_TIME = 86400000; // 24 hours in milliseconds
+    private static final String SECRET = "artverse_secret_key_must_be_at_least_32_characters_long_for_hs256";
+    private final Key key = Keys.hmacShaKeyFor(SECRET.getBytes());
 
-    // Generate token for a user
+    // 30 days
+    private final long EXPIRATION_TIME = 30L * 24 * 60 * 60 * 1000;
+
     public String generateToken(String email) {
         return Jwts.builder()
                 .setSubject(email)
@@ -25,12 +27,10 @@ public class JwtUtil {
                 .compact();
     }
 
-    // Get email from token
     public String extractEmail(String token) {
         return getClaims(token).getSubject();
     }
 
-    // Check if token is valid
     public boolean isTokenValid(String token) {
         try {
             getClaims(token);

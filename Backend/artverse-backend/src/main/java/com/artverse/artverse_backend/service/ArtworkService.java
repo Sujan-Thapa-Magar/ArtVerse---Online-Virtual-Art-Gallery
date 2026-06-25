@@ -62,8 +62,7 @@ public class ArtworkService {
         artwork.setDimensions(request.getDimensions());
         artwork.setCategory(request.getCategory());
         artwork.setForSale(request.isForSale());
-        artwork.setImageUrl("/uploads/" + uniqueFilename);
-
+        artwork.setImageUrl("http://localhost:8080/" + uniqueFilename);
         if (request.getPrice() != null) {
             artwork.setPrice(BigDecimal.valueOf(request.getPrice()));
         }

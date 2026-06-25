@@ -21,4 +21,7 @@ public class RegisterRequest {
     private String password;
 
     private User.Role role = User.Role.BUYER;
+
+    private String idCardUrl;
+
 }
