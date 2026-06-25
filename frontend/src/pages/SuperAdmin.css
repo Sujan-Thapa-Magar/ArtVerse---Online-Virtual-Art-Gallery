@@ -1,0 +1,489 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+* { box-sizing: border-box; }
+
+.sa-page {
+  display: flex;
+  min-height: 100vh;
+  font-family: 'Inter', sans-serif;
+  background: #f5f5f5;
+  color: #2A1A0E;
+}
+
+/* Sidebar */
+.sa-sidebar {
+  width: 220px;
+  min-width: 220px;
+  background: #2A1A0E;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.sa-sidebar-logo {
+  padding: 0 20px 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  margin-bottom: 16px;
+}
+
+.sa-logo-text {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #F5EDD6;
+  display: block;
+}
+
+.sa-logo-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #c4874a;
+  text-transform: uppercase;
+}
+
+.sa-sidebar-btn {
+  background: none;
+  border: none;
+  color: #aaa;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 12px 20px;
+  text-align: left;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+}
+
+.sa-sidebar-btn:hover {
+  color: #F5EDD6;
+  background: rgba(255,255,255,0.05);
+}
+
+.sa-sidebar-btn.active {
+  color: #F5EDD6;
+  background: rgba(196,135,74,0.2);
+  border-left: 3px solid #c4874a;
+}
+
+.sa-badge {
+  background: #c0392b;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin-left: auto;
+}
+
+.sa-logout {
+  margin-top: auto;
+  color: #e05c5c;
+}
+
+.sa-logout:hover {
+  color: #ff6b6b;
+  background: rgba(224,92,92,0.1);
+}
+
+/* Main */
+.sa-main {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.sa-content {
+  padding: 32px;
+  max-width: 1200px;
+}
+
+.sa-page-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: #2A1A0E;
+  margin: 0 0 4px;
+}
+
+.sa-page-sub {
+  font-size: 12px;
+  color: #aaa;
+  letter-spacing: 1px;
+  margin: 0 0 28px;
+}
+
+/* Stats Grid */
+.sa-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.sa-stat-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sa-stat-icon {
+  font-size: 24px;
+}
+
+.sa-stat-value {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 36px;
+  font-weight: 700;
+  color: #2A1A0E;
+  line-height: 1;
+}
+
+.sa-stat-label {
+  font-size: 11px;
+  color: #aaa;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* Alert */
+.sa-alert {
+  background: #fff8e8;
+  border: 1px solid #f0d080;
+  border-radius: 8px;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #8a6a00;
+  margin-bottom: 20px;
+}
+
+.sa-alert button {
+  background: #c4874a;
+  color: #fff;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Table */
+.sa-table-wrap {
+  background: #fff;
+  border-radius: 8px;
+  overflow: auto;
+  border: 1px solid #eee;
+}
+
+.sa-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.sa-table th {
+  background: #f8f8f8;
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #aaa;
+  border-bottom: 1px solid #eee;
+  white-space: nowrap;
+}
+
+.sa-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f5f5f5;
+  color: #2A1A0E;
+  vertical-align: middle;
+}
+
+.sa-table tr:last-child td {
+  border-bottom: none;
+}
+
+.sa-table tr:hover td {
+  background: #fafafa;
+}
+
+/* Role Select */
+.sa-role-select {
+  padding: 5px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: 'Inter', sans-serif;
+  color: #2A1A0E;
+  background: #fff;
+  cursor: pointer;
+}
+
+/* Verified Badge */
+.sa-verified {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 10px;
+}
+
+.sa-verified.yes {
+  background: #e8f5e9;
+  color: #2e9e5b;
+}
+
+.sa-verified.no {
+  background: #fff3e0;
+  color: #c4874a;
+}
+
+/* Status Badge */
+.sa-status {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 10px;
+}
+
+.sa-status-pending {
+  background: #f5f5f5;
+  color: #888;
+}
+
+.sa-status-in-transit {
+  background: #fff3e0;
+  color: #c4874a;
+}
+
+.sa-status-delivered {
+  background: #e8f5e9;
+  color: #2e9e5b;
+}
+
+/* Action Buttons */
+.sa-action-btns {
+  display: flex;
+  gap: 6px;
+}
+
+.sa-delete-btn {
+  padding: 5px 12px;
+  background: none;
+  border: 1px solid #e05c5c;
+  color: #e05c5c;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s;
+}
+
+.sa-delete-btn:hover {
+  background: #e05c5c;
+  color: #fff;
+}
+
+.sa-verify-btn {
+  padding: 5px 12px;
+  background: #2e9e5b;
+  border: none;
+  color: #fff;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s;
+}
+
+.sa-verify-btn:hover {
+  background: #27874e;
+}
+
+.sa-unverify-btn {
+  padding: 5px 12px;
+  background: none;
+  border: 1px solid #aaa;
+  color: #888;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+}
+
+@media (max-width: 768px) {
+  .sa-sidebar { display: none; }
+  .sa-stats-grid { grid-template-columns: 1fr 1fr; }
+  .sa-content { padding: 16px; }
+}
+
+.sa-view-id-btn {
+  padding: 5px 12px;
+  background: #4a90e2;
+  border: none;
+  color: #fff;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+}
+
+.sa-view-id-btn:hover {
+  background: #357abd;
+}
+
+.sa-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.sa-modal {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  max-width: 500px;
+  width: 90%;
+}
+
+.sa-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.sa-modal-header h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px;
+  margin: 0;
+}
+
+.sa-modal-header button {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #888;
+}
+
+.sa-modal-img {
+  width: 100%;
+  border-radius: 4px;
+  object-fit: contain;
+  max-height: 400px;
+}
+
+.sa-edit-btn {
+  padding: 5px 12px;
+  background: #c4874a;
+  border: none;
+  color: #fff;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s;
+}
+
+.sa-edit-btn:hover {
+  background: #a8703d;
+}
+
+.sa-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sa-edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sa-edit-field label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #aaa;
+}
+
+.sa-edit-field input,
+.sa-edit-field textarea {
+  padding: 10px 12px;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  color: #2A1A0E;
+  outline: none;
+  transition: border 0.2s;
+}
+
+.sa-edit-field input:focus,
+.sa-edit-field textarea:focus {
+  border-color: #8B3A1E;
+}
+
+.sa-edit-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.sa-cancel-btn {
+  padding: 8px 20px;
+  background: none;
+  border: 1px solid #ddd;
+  color: #888;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+}
+
+.sa-save-btn {
+  padding: 8px 20px;
+  background: #8B3A1E;
+  border: none;
+  color: #fff;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: background 0.2s;
+}
+
+.sa-save-btn:hover {
+  background: #7a3219;
+} 

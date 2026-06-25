@@ -10,111 +10,44 @@ const categories = [
   "SURREALISM",
 ];
 
-// Dummy data shown while real artworks load or if database is empty
-const dummyArtworks = [
-  {
-    id: 1,
-    title: "The Fragmented Memory",
-    artist: { name: "Adrian Valen" },
-    price: "12400",
-    medium: "Oil on Canvas, 2023",
-    category: "CONTEMPORARY",
-    imageUrl: "https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&q=80",
-  },
-  {
-    id: 2,
-    title: "Emerald Nocturne",
-    artist: { name: "Julian Kahlo" },
-    price: "15200",
-    medium: "Mixed Media, Original",
-    category: "IMPRESSIONISM",
-    imageUrl: "https://images.unsplash.com/photo-1549490349-8643362247b5?w=400&q=80",
-  },
-  {
-    id: 3,
-    title: "Silence in Geometry",
-    artist: { name: "Elena Rossi" },
-    price: "8900",
-    medium: "Silver Gelatin Print",
-    category: "MINIMALIST",
-    imageUrl: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=80",
-  },
-  {
-    id: 4,
-    title: "Form of Wind",
-    artist: { name: "Sasha Moratti" },
-    price: "24000",
-    medium: "Carrara Marble Study",
-    category: "RENAISSANCE",
-    imageUrl: "https://images.unsplash.com/photo-1567225557594-88d73e55f2cb?w=400&q=80",
-  },
-  {
-    id: 5,
-    title: "Himalayan Echo",
-    artist: { name: "Sujan Shrestha" },
-    price: "8500",
-    medium: "Oil on Canvas, 2024",
-    category: "CONTEMPORARY",
-    imageUrl: "https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=400&q=80",
-  },
-  {
-    id: 6,
-    title: "Sacred Geometry",
-    artist: { name: "Priya Maharjan" },
-    price: "18000",
-    medium: "Digital Art, 2023",
-    category: "SURREALISM",
-    imageUrl: "https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=400&q=80",
-  },
-  {
-    id: 7,
-    title: "Mandala Rising",
-    artist: { name: "Rohan Gurung" },
-    price: "11000",
-    medium: "Acrylic on Board",
-    category: "MINIMALIST",
-    imageUrl: "https://images.unsplash.com/photo-1490730141103-6cac27aaab94?w=400&q=80",
-  },
-  {
-    id: 8,
-    title: "Kathmandu Dreams",
-    artist: { name: "Nisha Tamang" },
-    price: "7200",
-    medium: "Watercolor, 2024",
-    category: "IMPRESSIONISM",
-    imageUrl: "https://images.unsplash.com/photo-1547891654-e66ed7ebb968?w=400&q=80",
-  },
-];
-
 export default function Gallery() {
   const navigate = useNavigate();
-  const [artworks, setArtworks] = useState(dummyArtworks);
+  const [artworks, setArtworks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [activeCategory, setActiveCategory] = useState("ALL COLLECTIONS");
   const [searchQuery, setSearchQuery] = useState("");
   const [liked, setLiked] = useState({});
 
-  // Fetch real artworks from backend on page load
   useEffect(() => {
     const fetchArtworks = async () => {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
       try {
-        const token = localStorage.getItem("token");
         const response = await fetch("http://localhost:8080/api/artworks", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
 
-        if (response.ok) {
-          const data = await response.json();
-          // Only replace dummy data if real artworks exist
-          if (data.length > 0) {
-            setArtworks(data);
-          }
+        if (response.status === 401 || response.status === 403) {
+          // Token expired or invalid — go back to login
+          localStorage.removeItem("token");
+          navigate("/login");
+          return;
         }
-      } catch (error) {
-        // If backend is down, keep showing dummy data
-        console.log("Using demo data — backend not reachable");
+
+        if (!response.ok) {
+          throw new Error("Failed to load artworks.");
+        }
+
+        const data = await response.json();
+        setArtworks(data);
+      } catch (err) {
+        setError("Could not connect to server. Make sure the backend is running.");
       } finally {
         setLoading(false);
       }
@@ -127,14 +60,12 @@ export default function Gallery() {
     setLiked((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  // Get artist name whether from real API (object) or dummy data (object)
   const getArtistName = (artist) => {
     if (!artist) return "Unknown Artist";
     if (typeof artist === "string") return artist;
-    return artist.name || "Unknown Artist";
+    return artist.name || artist.email || "Unknown Artist";
   };
 
-  // Get image URL — real artworks use /uploads/, dummy use full URL
   const getImageUrl = (imageUrl) => {
     if (!imageUrl) return "https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&q=80";
     if (imageUrl.startsWith("http")) return imageUrl;
@@ -169,7 +100,7 @@ export default function Gallery() {
         <div style={{ display: "flex", gap: "24px", alignItems: "center" }}>
           <button onClick={() => navigate("/home")} style={{ background: "none", border: "none", fontSize: "11px", letterSpacing: "2px", color: "#aaa", cursor: "pointer", fontWeight: "600" }}>HOME</button>
           <button style={{ background: "none", border: "none", fontSize: "11px", letterSpacing: "2px", color: "#111", cursor: "pointer", fontWeight: "700", borderBottom: "2px solid #111", paddingBottom: "2px" }}>SEARCH</button>
-          <button onClick={() => navigate("/notifications")} style={{ background: "none", border: "none", fontSize: "11px", letterSpacing: "2px", color: "#aaa", cursor: "pointer", fontWeight: "600" }}>NOTIFICATIONS</button>
+          <button onClick={() => navigate("/notification")} style={{ background: "none", border: "none", fontSize: "11px", letterSpacing: "2px", color: "#aaa", cursor: "pointer", fontWeight: "600" }}>NOTIFICATIONS</button>
           <button onClick={() => navigate("/profile")} style={{ background: "none", border: "none", fontSize: "11px", letterSpacing: "2px", color: "#aaa", cursor: "pointer", fontWeight: "600" }}>PROFILE</button>
         </div>
         <div
@@ -222,17 +153,34 @@ export default function Gallery() {
 
       {/* Loading State */}
       {loading && (
-        <div style={{ textAlign: "center", padding: "40px", color: "#aaa", fontSize: "13px" }}>
+        <div style={{ textAlign: "center", padding: "80px", color: "#aaa", fontSize: "13px" }}>
           Loading artworks...
         </div>
       )}
 
+      {/* Error State */}
+      {!loading && error && (
+        <div style={{ textAlign: "center", padding: "80px 20px", color: "#e05a5a", fontSize: "14px" }}>
+          <p style={{ margin: "0 0 16px" }}>{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            style={{ padding: "10px 24px", backgroundColor: "#111", color: "#fff", border: "none", borderRadius: "50px", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}
+          >
+            RETRY
+          </button>
+        </div>
+      )}
+
       {/* Artwork Grid */}
-      {!loading && (
+      {!loading && !error && (
         <div style={{ padding: "16px 12px" }}>
           {filtered.length === 0 ? (
             <div style={{ textAlign: "center", color: "#aaa", padding: "80px 0", fontSize: "14px" }}>
-              No artworks found for "{searchQuery}"
+              {searchQuery
+                ? `No artworks found for "${searchQuery}"`
+                : artworks.length === 0
+                ? "No artworks yet. Be the first to upload!"
+                : `No artworks in ${activeCategory}`}
             </div>
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
@@ -242,7 +190,6 @@ export default function Gallery() {
                   onClick={() => navigate(`/artwork/${art.id}`)}
                   style={{ borderRadius: "16px", overflow: "hidden", cursor: "pointer", backgroundColor: "#fff", boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}
                 >
-                  {/* Image */}
                   <div style={{ position: "relative", height: "200px", overflow: "hidden", backgroundColor: "#222" }}>
                     <img
                       src={getImageUrl(art.imageUrl)}
@@ -252,7 +199,6 @@ export default function Gallery() {
                       onMouseLeave={(e) => e.target.style.transform = "scale(1)"}
                       onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&q=80"; }}
                     />
-                    {/* Like Button */}
                     <button
                       onClick={(e) => { e.stopPropagation(); toggleLike(art.id); }}
                       style={{
@@ -270,10 +216,9 @@ export default function Gallery() {
                     </button>
                   </div>
 
-                  {/* Info */}
                   <div style={{ padding: "12px 14px 14px", backgroundColor: "#fff" }}>
                     <p style={{ fontSize: "9px", color: "#aaa", letterSpacing: "1.5px", textTransform: "uppercase", margin: "0 0 4px", fontWeight: "600" }}>
-                      {art.medium || "Artwork"}
+                      {art.medium || art.category || "Artwork"}
                     </p>
                     <p style={{ fontSize: "13px", fontWeight: "700", color: "#111", margin: "0 0 3px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {art.title}
@@ -282,25 +227,11 @@ export default function Gallery() {
                       {getArtistName(art.artist)}
                     </p>
                     <p style={{ fontSize: "13px", fontWeight: "700", color: "#c0392b", margin: 0 }}>
-                      {art.price ? `NPR ${Number(art.price).toLocaleString()}` : "Price on request"}
+                      {art.forSale && art.price ? `NPR ${Number(art.price).toLocaleString()}` : "Not for sale"}
                     </p>
                   </div>
                 </div>
               ))}
-            </div>
-          )}
-
-          {/* Load More */}
-          {filtered.length > 0 && (
-            <div style={{ display: "flex", justifyContent: "center", marginTop: "32px" }}>
-              <button style={{
-                padding: "12px 32px", border: "1px solid #ccc",
-                borderRadius: "50px", fontSize: "10px", fontWeight: "700",
-                letterSpacing: "2px", color: "#666", backgroundColor: "#fff",
-                cursor: "pointer"
-              }}>
-                LOAD MORE MASTERPIECES
-              </button>
             </div>
           )}
         </div>

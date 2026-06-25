@@ -10,6 +10,9 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import ArtistDashboard from "./pages/ArtistDashboard";
 import BuyerProfile from "./pages/BuyerProfile";
 import Notifications from "./pages/Notifications";
+import AdminDashboard from "./pages/AdminDashboard";
+import Chat from "./pages/Chat";
+import SuperAdmin from "./pages/SuperAdmin";
 
 function App() {
   return (
@@ -38,7 +41,15 @@ function App() {
           <Route path="/profile" element={
             <ProtectedRoute><BuyerProfile/></ProtectedRoute>} />
           <Route path="/notification" element={
-            <ProtectedRoute><Notifications/></ProtectedRoute>} /> 
+            <ProtectedRoute><Notifications/></ProtectedRoute>} />
+          <Route path="/admin" element={
+            <ProtectedRoute><AdminDashboard/></ProtectedRoute>} />
+          <Route path="/chat" element={
+            <ProtectedRoute><Chat/></ProtectedRoute>} />
+          <Route path="/chat/:userId" element={
+            <ProtectedRoute><Chat/></ProtectedRoute>} />
+          <Route path="/superadmin" element={
+            <ProtectedRoute><SuperAdmin/></ProtectedRoute>} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

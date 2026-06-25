@@ -1,180 +1,178 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import "./BuyerProfile.css";
 
-// --- Data ---
-const orders = [
-  {
-    id: 1,
-    title: "Ephemeral Horizon No. 4",
-    artist: "Elena Rosa — Mixed Media on Canvas",
-    price: "Rs. 42,000",
-    status: "delivered",
-    statusLabel: "DELIVERED",
-    btnLabel: "DETAILS",
-    thumbShape: "horizon",
-    thumbBg: "#3a6a8a",
-  },
-  {
-    id: 2,
-    title: "Geometry of Silence",
-    artist: "Marcus Thordin — Limited Edition Print",
-    price: "Rs. 18,500",
-    status: "delivered",
-    statusLabel: "DELIVERED",
-    btnLabel: "DETAILS",
-    thumbShape: "geometry",
-    thumbBg: "#d0d0d0",
-  },
-  {
-    id: 3,
-    title: "Molten Core Study",
-    artist: "Sarah Jenkins — Digital Sculpture",
-    price: "Rs. 31,000",
-    status: "in-transit",
-    statusLabel: "IN TRANSIT",
-    btnLabel: "TRACKING",
-    thumbShape: "molten",
-    thumbBg: "#555",
-  },
-];
+const API = "http://localhost:8080";
 
-const savedItems = [
-  { id: 1, shape: "splash",   bg: "#1a1a2e", large: true },
-  { id: 2, shape: "tree",     bg: "#e0ddd5", large: false },
-  { id: 3, shape: "origami",  bg: "#111",    large: false },
-  { id: 4, shape: "sand",     bg: "#c8b89a", large: false },
-];
-
-// --- Thumbnail SVGs ---
-function ThumbSVG({ shape, bg }) {
-  if (shape === "horizon") return (
-    <svg viewBox="0 0 64 64" width="64" height="64">
-      <rect width="64" height="64" fill="#3a6a8a" />
-      <rect x="0" y="36" width="64" height="28" fill="#1a3a5a" opacity="0.9" />
-      <rect x="0" y="28" width="64" height="12" fill="#c4874a" opacity="0.6" />
-      <circle cx="48" cy="18" r="10" fill="#F5EDD6" opacity="0.8" />
-    </svg>
-  );
-  if (shape === "geometry") return (
-    <svg viewBox="0 0 64 64" width="64" height="64">
-      <rect width="64" height="64" fill="#e8e8e8" />
-      <polygon points="32,8 56,52 8,52" fill="none" stroke="#888" strokeWidth="2" />
-      <polygon points="32,18 50,48 14,48" fill="#ccc" opacity="0.7" />
-      <circle cx="32" cy="32" r="8" fill="#bbb" opacity="0.6" />
-    </svg>
-  );
-  if (shape === "molten") return (
-    <svg viewBox="0 0 64 64" width="64" height="64">
-      <rect width="64" height="64" fill="#444" />
-      <ellipse cx="32" cy="40" rx="18" ry="22" fill="#666" opacity="0.8" />
-      <ellipse cx="32" cy="30" rx="12" ry="16" fill="#888" opacity="0.7" />
-      <circle cx="32" cy="22" r="8" fill="#aaa" opacity="0.6" />
-    </svg>
-  );
-  return null;
+function getToken() {
+  return localStorage.getItem("token");
 }
 
-function SavedSVG({ shape, bg }) {
-  if (shape === "splash") return (
-    <svg viewBox="0 0 100 200" width="100%" height="100%" style={{ display: "block" }}>
-      <rect width="100" height="200" fill="#1a1a2e" />
-      <ellipse cx="50" cy="130" rx="20" ry="8" fill="#4a7a9b" opacity="0.6" />
-      <ellipse cx="50" cy="110" rx="12" ry="30" fill="#6aabcb" opacity="0.7" />
-      <ellipse cx="30" cy="90" rx="6" ry="18" fill="#4a9ab5" opacity="0.5" transform="rotate(-20 30 90)" />
-      <ellipse cx="70" cy="85" rx="5" ry="15" fill="#4a9ab5" opacity="0.5" transform="rotate(15 70 85)" />
-      <circle cx="22" cy="75" r="4" fill="#6aabcb" opacity="0.6" />
-      <circle cx="78" cy="70" r="3" fill="#6aabcb" opacity="0.5" />
-      <circle cx="45" cy="60" r="3" fill="#8acbdb" opacity="0.6" />
-      <circle cx="58" cy="55" r="2" fill="#8acbdb" opacity="0.5" />
-    </svg>
-  );
-  if (shape === "tree") return (
-    <svg viewBox="0 0 90 90" width="100%" height="100%" style={{ display: "block" }}>
-      <rect width="90" height="90" fill="#e8e5de" />
-      <rect x="42" y="55" width="6" height="25" fill="#888" />
-      <ellipse cx="45" cy="40" rx="22" ry="28" fill="#555" opacity="0.7" />
-      <ellipse cx="30" cy="48" rx="14" ry="18" fill="#666" opacity="0.5" />
-      <ellipse cx="60" cy="46" rx="12" ry="16" fill="#666" opacity="0.5" />
-    </svg>
-  );
-  if (shape === "origami") return (
-    <svg viewBox="0 0 90 90" width="100%" height="100%" style={{ display: "block" }}>
-      <rect width="90" height="90" fill="#111" />
-      <polygon points="45,15 75,65 45,55" fill="#555" opacity="0.9" />
-      <polygon points="45,15 15,65 45,55" fill="#333" opacity="0.9" />
-      <polygon points="15,65 75,65 45,55" fill="#444" opacity="0.8" />
-      <polygon points="45,15 60,40 45,55 30,40" fill="#666" opacity="0.6" />
-    </svg>
-  );
-  if (shape === "sand") return (
-    <svg viewBox="0 0 90 90" width="100%" height="100%" style={{ display: "block" }}>
-      <rect width="90" height="90" fill="#c8b89a" />
-      <path d="M0 30 Q22 20 45 30 Q68 40 90 30" stroke="#b0a080" strokeWidth="2" fill="none" opacity="0.7" />
-      <path d="M0 45 Q22 35 45 45 Q68 55 90 45" stroke="#b0a080" strokeWidth="2" fill="none" opacity="0.7" />
-      <path d="M0 60 Q22 50 45 60 Q68 70 90 60" stroke="#b0a080" strokeWidth="2" fill="none" opacity="0.7" />
-      <path d="M0 75 Q22 65 45 75 Q68 85 90 75" stroke="#b0a080" strokeWidth="2" fill="none" opacity="0.6" />
-    </svg>
-  );
-  return null;
+function getCurrentUser() {
+  const token = getToken();
+  if (!token) return null;
+  try {
+    return JSON.parse(atob(token.split(".")[1]));
+  } catch {
+    return null;
+  }
 }
 
 export default function BuyerProfile() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("Orders");
+  const [profile, setProfile] = useState(null);
+  const [orders, setOrders] = useState([]);
+  const [liked, setLiked] = useState([]);
+  const [following, setFollowing] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const token = getToken();
+  const headers = { Authorization: `Bearer ${token}` };
+
+  useEffect(() => {
+    fetchAll();
+    fetch(`${API}/api/notifications/unread-count`, { headers })
+      .then(res => res.json())
+      .then(data => setUnreadCount(data.unreadCount || 0))
+      .catch(() => {});
+  }, []);
+
+  async function fetchAll() {
+    setLoading(true);
+    try {
+      const [ordersRes, likedRes, followingRes] = await Promise.all([
+        fetch(`${API}/api/orders/my`, { headers }),
+        fetch(`${API}/api/likes/my`, { headers }),
+        fetch(`${API}/api/follows/following`, { headers }),
+      ]);
+
+      const ordersData = ordersRes.ok ? await ordersRes.json() : [];
+      const likedData = likedRes.ok ? await likedRes.json() : [];
+      const followingData = followingRes.ok ? await followingRes.json() : [];
+
+      setOrders(ordersData);
+      setLiked(likedData);
+      setFollowing(followingData);
+
+      if (ordersData.length > 0) {
+        setProfile(ordersData[0].buyer);
+      } else {
+        const user = getCurrentUser();
+        setProfile({ name: user?.sub || "User", createdAt: null });
+      }
+    } catch (err) {
+      console.error("Failed to fetch profile data", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/login");
+  };
+
+  const initials = profile?.name
+    ? profile.name.split(" ").map((n) => n[0]).join("").toUpperCase()
+    : "?";
+
+  const memberSince = profile?.createdAt
+    ? new Date(profile.createdAt).getFullYear()
+    : null;
+
+  if (loading) {
+    return (
+      <div className="bp-page" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
+        <p style={{ color: "#aaa", fontSize: "14px" }}>Loading profile...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="bp-page">
 
       {/* Navbar */}
       <nav className="bp-navbar">
-        <span className="bp-logo">ArtVerse</span>
-        <div className="bp-nav-links">
-          {["Home", "Search", "Notifications", "Profile"].map((link) => (
-            <a key={link} href={`/${link.toLowerCase()}`}
-              className={`bp-nav-link ${link === "Profile" ? "active" : ""}`}>
-              {link}
-            </a>
-          ))}
-          <div className="bp-nav-avatar">J</div>
+        <button className="bp-menu-btn" onClick={() => setMenuOpen(!menuOpen)}>☰</button>
+        <span className="bp-logo" onClick={() => navigate("/home")} style={{ cursor: "pointer" }}>ArtVerse</span>
+        <div className="bp-nav-right">
+          <button className="bp-notif-btn" onClick={() => navigate("/notification")}>
+            🔔
+            {unreadCount > 0 && <span className="bp-notif-badge">{unreadCount}</span>}
+          </button>
+          <div className="bp-nav-avatar" onClick={() => navigate("/profile")}>
+            {initials[0] || "?"}
+          </div>
         </div>
       </nav>
+
+      {/* Slide-in Menu */}
+      {menuOpen && (
+        <div className="bp-menu-overlay" onClick={() => setMenuOpen(false)}>
+          <div className="bp-menu-drawer" onClick={(e) => e.stopPropagation()}>
+            <div className="bp-menu-header">
+              <span>Menu</span>
+              <button onClick={() => setMenuOpen(false)}>✕</button>
+            </div>
+            {[
+              { label: "🏠  Home", path: "/home" },
+              { label: "🖼  Gallery", path: "/gallery" },
+              { label: "🎭  Exhibition", path: "/exhibition" },
+              { label: "💬  Messages", path: "/chat" },
+              { label: "🔔  Notifications", path: "/notification" },
+              { label: "👤  My Profile", path: "/profile" },
+            ].map((item) => (
+              <button key={item.path} onClick={() => { navigate(item.path); setMenuOpen(false); }} className="bp-menu-item">
+                {item.label}
+              </button>
+            ))}
+            <div className="bp-menu-logout-wrap">
+              <button onClick={handleLogout} className="bp-menu-logout">🚪  Logout</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Profile Header */}
       <div className="bp-header">
         <div className="bp-profile-row">
-
-          {/* Left — Avatar + Name */}
           <div className="bp-profile-left">
             <div className="bp-avatar-wrap">
-              <div className="bp-avatar-placeholder">J</div>
+              {profile?.profilePhoto ? (
+                <img src={`${API}/${profile.profilePhoto}`} alt="avatar" />
+              ) : (
+                <div className="bp-avatar-placeholder">{initials[0]}</div>
+              )}
             </div>
             <div>
-              <h1 className="bp-name">Julian Vane</h1>
-              <p className="bp-since">Collector Since 2024</p>
+              <h1 className="bp-name">{profile?.name || "User"}</h1>
+              {memberSince && <p className="bp-since">Collector Since {memberSince}</p>}
               <div className="bp-badges">
-                <span className="bp-badge">Top Collector</span>
-                <span className="bp-badge">Museum Patron</span>
+                {orders.length >= 5 && <span className="bp-badge">Top Collector</span>}
+                {following.length >= 3 && <span className="bp-badge">Art Enthusiast</span>}
               </div>
             </div>
           </div>
 
-          {/* Right — Stats */}
           <div className="bp-stats">
             <div className="bp-stat">
-              <span className="bp-stat-value">12</span>
+              <span className="bp-stat-value">{orders.length}</span>
               <span className="bp-stat-label">Purchased</span>
             </div>
             <div className="bp-stat-divider" />
             <div className="bp-stat">
-              <span className="bp-stat-value">34</span>
+              <span className="bp-stat-value">{liked.length}</span>
               <span className="bp-stat-label">Saved</span>
             </div>
             <div className="bp-stat-divider" />
             <div className="bp-stat">
-              <span className="bp-stat-value">8</span>
+              <span className="bp-stat-value">{following.length}</span>
               <span className="bp-stat-label">Following</span>
             </div>
           </div>
-
         </div>
       </div>
 
@@ -194,60 +192,106 @@ export default function BuyerProfile() {
       {/* Body */}
       <div className="bp-body">
 
-        {/* Left — Orders */}
-        <div className="bp-orders-section">
-          <p className="bp-orders-label">Recent — 3 of 12</p>
-
-          {orders.map((order) => (
-            <div key={order.id} className="bp-order-item">
-
-              {/* Thumbnail */}
-              <div className="bp-order-thumb">
-                <ThumbSVG shape={order.thumbShape} bg={order.thumbBg} />
-              </div>
-
-              {/* Info */}
-              <div className="bp-order-info">
-                <p className="bp-order-title">{order.title}</p>
-                <p className="bp-order-artist">{order.artist}</p>
-                <p className="bp-order-price-label">Price Paid</p>
-                <p className="bp-order-price">{order.price}</p>
-              </div>
-
-              {/* Status + Button */}
-              <div className="bp-order-right">
-                <span className={`bp-status ${order.status}`}>{order.statusLabel}</span>
-                <button className="bp-order-btn">{order.btnLabel}</button>
-              </div>
-
-            </div>
-          ))}
-        </div>
-
-        {/* Right — Saved for Later */}
-        <div className="bp-saved-section">
-          <div className="bp-saved-header">
-            <span className="bp-saved-label">Saved for Later</span>
-            <button className="bp-view-all">View All</button>
-          </div>
-
-          <div className="bp-saved-grid">
-            {savedItems.map((item) => (
-              <div
-                key={item.id}
-                className="bp-saved-item"
-                style={item.large ? { gridRow: "span 2" } : {}}
-              >
-                <div className="bp-saved-img">
-                  <SavedSVG shape={item.shape} bg={item.bg} />
+        {activeTab === "Orders" && (
+          <div className="bp-orders-section" style={{ gridColumn: "1 / -1" }}>
+            <p className="bp-orders-label">{orders.length} Order{orders.length !== 1 ? "s" : ""}</p>
+            {orders.length === 0 ? (
+              <p style={{ color: "#aaa", fontSize: "14px" }}>No orders yet.</p>
+            ) : (
+              orders.map((order) => (
+                <div key={order.id} className="bp-order-item">
+                  <div className="bp-order-thumb">
+                    <img src={order.artwork.imageUrl} alt={order.artwork.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  </div>
+                  <div className="bp-order-info">
+                    <p className="bp-order-title">{order.artwork.title}</p>
+                    <p className="bp-order-artist">{order.artwork.artist.name}</p>
+                    <p className="bp-order-price-label">Price Paid</p>
+                    <p className="bp-order-price">Rs. {Number(order.pricePaid).toLocaleString()}</p>
+                  </div>
+                  <div className="bp-order-right">
+                    <span className={`bp-status ${order.status.toLowerCase().replace("_", "-")}`}>
+                      {order.status.replace("_", " ")}
+                    </span>
+                  </div>
                 </div>
-                <span className="bp-saved-heart">♥</span>
-              </div>
-            ))}
+              ))
+            )}
           </div>
-        </div>
+        )}
+
+        {activeTab === "Saved Items" && (
+          <div className="bp-orders-section" style={{ gridColumn: "1 / -1" }}>
+            <p className="bp-orders-label">{liked.length} Saved Artwork{liked.length !== 1 ? "s" : ""}</p>
+            {liked.length === 0 ? (
+              <p style={{ color: "#aaa", fontSize: "14px" }}>No saved artworks yet.</p>
+            ) : (
+              <div className="bp-liked-grid">
+                {liked.map((artwork) => (
+                  <a key={artwork.id} href={`/artwork/${artwork.id}`} className="bp-liked-card">
+                    <img src={artwork.imageUrl} alt={artwork.title} className="bp-liked-img" />
+                    <div className="bp-liked-info">
+                      <p className="bp-liked-title">{artwork.title}</p>
+                      <p className="bp-liked-artist">{artwork.artist.name}</p>
+                    </div>
+                    <span className="bp-saved-heart">♥</span>
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === "Following" && (
+          <div className="bp-orders-section" style={{ gridColumn: "1 / -1" }}>
+            <p className="bp-orders-label">Following {following.length} Artist{following.length !== 1 ? "s" : ""}</p>
+            {following.length === 0 ? (
+              <p style={{ color: "#aaa", fontSize: "14px" }}>Not following any artists yet.</p>
+            ) : (
+              following.map((artist) => (
+                <div key={artist.id} className="bp-order-item">
+                  <div className="bp-avatar-wrap" style={{ width: 48, height: 48, flexShrink: 0 }}>
+                    {artist.profilePhoto ? (
+                      <img src={`${API}/${artist.profilePhoto}`} alt={artist.name} />
+                    ) : (
+                      <div className="bp-avatar-placeholder" style={{ fontSize: 18 }}>
+                        {artist.name[0].toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                  <div className="bp-order-info">
+                    <p className="bp-order-title">{artist.name}</p>
+                    <p className="bp-order-artist">{artist.bio || "Nepali Artist"}</p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
 
       </div>
+
+      {/* Bottom Nav */}
+      <nav className="bp-bottom-nav">
+        <button onClick={() => navigate("/home")} className="bp-bottom-btn">
+          <span>🏠</span><span>Home</span>
+        </button>
+        <button onClick={() => navigate("/gallery")} className="bp-bottom-btn">
+          <span>🖼</span><span>Gallery</span>
+        </button>
+        <button onClick={() => navigate("/chat")} className="bp-bottom-btn">
+          <span>💬</span><span>Chat</span>
+        </button>
+        <button onClick={() => navigate("/notification")} className="bp-bottom-btn" style={{ position: "relative" }}>
+          <span>🔔</span>
+          {unreadCount > 0 && <span className="bp-bottom-dot" />}
+          <span>Alerts</span>
+        </button>
+        <button onClick={() => navigate("/profile")} className="bp-bottom-btn active">
+          <span>👤</span><span>Profile</span>
+        </button>
+      </nav>
+
     </div>
   );
 }

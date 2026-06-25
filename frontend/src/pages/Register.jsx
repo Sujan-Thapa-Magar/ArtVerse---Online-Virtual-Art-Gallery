@@ -19,6 +19,7 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [idPreview, setIdPreview] = useState(null);
+  const [idFile, setIdFile] = useState(null);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -35,7 +36,10 @@ export default function Register() {
 
   const handleIdUpload = (e) => {
     const file = e.target.files[0];
-    if (file) setIdPreview(URL.createObjectURL(file));
+    if (file) {
+      setIdPreview(URL.createObjectURL(file));
+      setIdFile(file);
+    }
   };
 
   const handleRegister = async (e) => {
@@ -43,15 +47,18 @@ export default function Register() {
     setLoading(true);
     setMessage("");
     try {
+      const form = new FormData();
+      form.append("name", formData.name);
+      form.append("email", formData.email);
+      form.append("password", formData.password);
+      form.append("role", formData.role);
+      if (idFile) {
+        form.append("idCard", idFile);
+      }
+
       const response = await fetch("http://localhost:8080/api/auth/register", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-          role: formData.role,
-        }),
+        body: form,
       });
       const text = await response.text();
       if (response.ok) {
@@ -205,7 +212,7 @@ export default function Register() {
               />
             </div>
 
-            {/* Role Selector — shown first so fields below react to it */}
+            {/* Role Selector */}
             <div className="mb-5">
               <label className="block text-xs tracking-widest text-gray-500 mb-2 font-medium">I AM A</label>
               <div className="relative">
@@ -303,7 +310,6 @@ export default function Register() {
         ) : (
 
           <form onSubmit={handleLogin}>
-
             <div className="mb-5">
               <label className="block text-xs tracking-widest text-gray-500 mb-2 font-medium">EMAIL ADDRESS</label>
               <input

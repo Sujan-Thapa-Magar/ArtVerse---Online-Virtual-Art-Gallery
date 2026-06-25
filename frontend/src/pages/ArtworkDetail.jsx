@@ -1,304 +1,376 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-
-const artworkData = {
-  1: {
-    id: 1,
-    title: "The Fragmented Memory",
-    artist: "Adrian Valen",
-    artistBio: "Contemporary artist based in Kathmandu, known for exploring themes of memory and urban decay.",
-    price: "12,400",
-    medium: "Oil on Canvas",
-    dimensions: "24 × 36 inches",
-    year: "2023",
-    edition: "1 of 1 Original",
-    category: "CONTEMPORARY",
-    image: "https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=800&q=80",
-    artistImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80",
-    description: "This piece explores the mechanics of memory and urban decay. The work uses heavy impasto techniques that detail the deep spiritual connection between ancient Buddhist mathematics and contemporary digital art forms. Each stroke is a deliberate act between the past and the present.",
-    tags: ["Contemporary", "Abstract", "Urban", "Memory"],
-    likes: 247,
-    views: 1840,
-  },
-};
-
-const relatedWorks = [
-  { id: 2, title: "Eternal Nocturne", artist: "Julian Kahlo", image: "https://images.unsplash.com/photo-1549490349-8643362247b5?w=300&q=80", price: "15,200" },
-  { id: 3, title: "Silence in Geometry", artist: "Elena Rossi", image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=300&q=80", price: "8,900" },
-  { id: 4, title: "Form of Wind", artist: "Sasha Moratti", image: "https://images.unsplash.com/photo-1567225557594-88d73e55f2cb?w=300&q=80", price: "24,000" },
-];
-
-const comments = [
-  { id: 1, name: "Ramesh B.", time: "2 days ago", text: "This truly captures the essence of Kathmandu's forgotten corners. The textures feel alive." },
-  { id: 2, name: "Priya M.", time: "5 days ago", text: "Absolutely breathtaking. The structural balance is so precise yet emotional at the same time." },
-];
+import "./ArtworkDetail.css";
 
 export default function ArtworkDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const artwork = artworkData[id] || artworkData[1];
+
+  const [artwork, setArtwork] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(artwork.likes);
-  const [comment, setComment] = useState("");
-  const [commentList, setCommentList] = useState(comments);
+  const [likeCount, setLikeCount] = useState(0);
+  const [likeLoading, setLikeLoading] = useState(false);
+
   const [following, setFollowing] = useState(false);
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followLoading, setFollowLoading] = useState(false);
 
-  const handleLike = () => {
-    setLiked(!liked);
-    setLikeCount((prev) => liked ? prev - 1 : prev + 1);
+  const [comments, setComments] = useState([]);
+  const [commentText, setCommentText] = useState("");
+  const [commentLoading, setCommentLoading] = useState(false);
+
+  const [orderLoading, setOrderLoading] = useState(false);
+  const [orderSuccess, setOrderSuccess] = useState(false);
+
+  const token = localStorage.getItem("token");
+
+  useEffect(() => {
+    const fetchAll = async () => {
+      try {
+        const artRes = await fetch(`http://localhost:8080/api/artworks/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!artRes.ok) throw new Error("Artwork not found");
+        const artData = await artRes.json();
+        setArtwork(artData);
+
+        const likeRes = await fetch(`http://localhost:8080/api/likes/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (likeRes.ok) {
+          const likeData = await likeRes.json();
+          setLiked(likeData.liked);
+          setLikeCount(likeData.likeCount);
+        }
+
+        const commRes = await fetch(`http://localhost:8080/api/comments/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (commRes.ok) {
+          setComments(await commRes.json());
+        }
+
+        if (artData.artist?.id) {
+          const followRes = await fetch(
+            `http://localhost:8080/api/follows/${artData.artist.id}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          if (followRes.ok) {
+            const followData = await followRes.json();
+            setFollowing(followData.following);
+            setFollowerCount(followData.followerCount);
+          }
+        }
+      } catch (err) {
+        setError(err.message || "Failed to load artwork.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAll();
+  }, [id]);
+
+  const handleLike = async () => {
+    if (likeLoading) return;
+    setLikeLoading(true);
+    try {
+      const res = await fetch(`http://localhost:8080/api/likes/${id}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setLiked(data.liked);
+        setLikeCount(data.likeCount);
+      }
+    } catch (err) {
+      console.error("Like failed", err);
+    } finally {
+      setLikeLoading(false);
+    }
   };
 
-  const handleComment = () => {
-    if (!comment.trim()) return;
-    setCommentList([
-      { id: Date.now(), name: "You", time: "Just now", text: comment },
-      ...commentList,
-    ]);
-    setComment("");
+  const handleFollow = async () => {
+    if (followLoading || !artwork?.artist?.id) return;
+    setFollowLoading(true);
+    try {
+      const res = await fetch(
+        `http://localhost:8080/api/follows/${artwork.artist.id}`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setFollowing(data.following);
+        setFollowerCount(data.followerCount);
+      }
+    } catch (err) {
+      console.error("Follow failed", err);
+    } finally {
+      setFollowLoading(false);
+    }
   };
+
+  const handleComment = async () => {
+    if (!commentText.trim() || commentLoading) return;
+    setCommentLoading(true);
+    try {
+      const res = await fetch(`http://localhost:8080/api/comments/${id}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ text: commentText.trim() }),
+      });
+      if (res.ok) {
+        const saved = await res.json();
+        setComments((prev) => [saved, ...prev]);
+        setCommentText("");
+      }
+    } catch (err) {
+      console.error("Comment failed", err);
+    } finally {
+      setCommentLoading(false);
+    }
+  };
+
+  const handleBuyNow = async () => {
+    if (orderLoading || orderSuccess) return;
+    setOrderLoading(true);
+    try {
+      const res = await fetch(`http://localhost:8080/api/orders/${id}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setOrderSuccess(true);
+        setTimeout(() => navigate("/profile"), 1500);
+      } else {
+        alert("Failed to place order. Please try again.");
+      }
+    } catch (err) {
+      console.error("Order failed", err);
+      alert("Something went wrong.");
+    } finally {
+      setOrderLoading(false);
+    }
+  };
+
+  const getImageUrl = (url) => {
+    if (!url) return "https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=800&q=80";
+    if (url.startsWith("http")) return url;
+    return `http://localhost:8080${url}`;
+  };
+
+  const formatTime = (dateStr) => {
+    if (!dateStr) return "";
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diff = Math.floor((now - date) / 1000);
+    if (diff < 60) return "Just now";
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return `${Math.floor(diff / 86400)}d ago`;
+  };
+
+  if (loading) {
+    return <div className="detail-loading"><p>Loading artwork...</p></div>;
+  }
+
+  if (error || !artwork) {
+    return (
+      <div className="detail-error">
+        <p>{error || "Artwork not found."}</p>
+        <button onClick={() => navigate("/gallery")}>Back to Gallery</button>
+      </div>
+    );
+  }
+
+  const artistName = artwork.artist?.name || artwork.artist?.email || "Unknown Artist";
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#f8f8f8", fontFamily: "Inter, sans-serif", paddingBottom: "80px" }}>
+    <div className="detail-page">
 
-      {/* Top Bar */}
-      <nav style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "14px 20px", backgroundColor: "#fff",
-        borderBottom: "1px solid #eee", position: "sticky", top: 0, zIndex: 50
-      }}>
-        <button
-          onClick={() => navigate(-1)}
-          style={{ background: "none", border: "none", fontSize: "22px", cursor: "pointer", color: "#333", width: "36px", height: "36px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%", backgroundColor: "#f5f5f5" }}
-        >
-          ←
-        </button>
-        <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "18px", fontWeight: "700", letterSpacing: "2px" }}>
-          Artwork
-        </span>
-        <div style={{ display: "flex", gap: "8px" }}>
-          <button style={{ background: "none", border: "none", fontSize: "18px", cursor: "pointer", color: "#555", width: "36px", height: "36px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%", backgroundColor: "#f5f5f5" }}>
-            ↑
-          </button>
+      <nav className="detail-nav">
+        <button className="detail-nav-btn" onClick={() => navigate(-1)}>←</button>
+        <span className="detail-nav-title">Artwork</span>
+        <div className="detail-nav-actions">
+          <button className="detail-nav-btn">↑</button>
           <button
+            className={`detail-nav-btn${liked ? " detail-nav-btn--liked" : ""}`}
             onClick={handleLike}
-            style={{ background: "none", border: "none", fontSize: "18px", cursor: "pointer", width: "36px", height: "36px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%", backgroundColor: liked ? "#fff0f0" : "#f5f5f5", color: liked ? "#e53e3e" : "#555" }}
+            disabled={likeLoading}
           >
             ♥
           </button>
         </div>
       </nav>
 
-      {/* Hero Image */}
-      <div style={{ width: "100%", backgroundColor: "#0d0305", position: "relative" }}>
+      <div className="detail-hero">
         <img
-          src={artwork.image}
+          src={getImageUrl(artwork.imageUrl)}
           alt={artwork.title}
-          style={{ width: "100%", height: "360px", objectFit: "cover", display: "block", opacity: 0.92 }}
+          className="detail-hero-img"
         />
-        {/* Category Badge */}
-        <div style={{
-          position: "absolute", top: "16px", left: "16px",
-          backgroundColor: "rgba(0,0,0,0.6)", color: "#fff",
-          padding: "5px 12px", borderRadius: "50px",
-          fontSize: "9px", fontWeight: "700", letterSpacing: "2px"
-        }}>
-          {artwork.category}
-        </div>
+        {artwork.category && (
+          <div className="detail-category-badge">{artwork.category}</div>
+        )}
       </div>
 
-      {/* Main Content */}
-      <div style={{ maxWidth: "700px", margin: "0 auto", padding: "0 16px" }}>
+      <div className="detail-content">
 
-        {/* Title + Price */}
-        <div style={{ backgroundColor: "#fff", borderRadius: "20px", padding: "24px", marginTop: "-24px", position: "relative", boxShadow: "0 -4px 24px rgba(0,0,0,0.08)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
-            <div style={{ flex: 1, paddingRight: "16px" }}>
-              <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "26px", fontWeight: "700", color: "#111", margin: "0 0 4px", lineHeight: 1.2 }}>
-                {artwork.title}
-              </h1>
-              <p style={{ fontSize: "12px", color: "#aaa", margin: 0 }}>
-                {artwork.artist} · {artwork.year}
+        <div className="detail-card detail-card--top">
+          <div className="detail-title-row">
+            <div className="detail-title-left">
+              <h1 className="detail-title">{artwork.title}</h1>
+              <p className="detail-artist-meta">
+                {artistName}
+                {artwork.createdAt && (
+                  <> · {new Date(artwork.createdAt).getFullYear()}</>
+                )}
               </p>
             </div>
-            <div style={{ textAlign: "right", flexShrink: 0 }}>
-              <p style={{ fontSize: "22px", fontWeight: "700", color: "#c0392b", margin: 0 }}>
-                NPR {artwork.price}
-              </p>
-              <p style={{ fontSize: "10px", color: "#aaa", margin: "2px 0 0", letterSpacing: "1px" }}>
-                {artwork.edition}
-              </p>
-            </div>
+            {artwork.forSale && artwork.price && (
+              <div className="detail-price-block">
+                <p className="detail-price">NPR {Number(artwork.price).toLocaleString()}</p>
+                <p className="detail-edition">1 of 1 Original</p>
+              </div>
+            )}
           </div>
 
-          {/* Like + View counts */}
-          <div style={{ display: "flex", gap: "20px", marginBottom: "20px" }}>
-            <span style={{ fontSize: "12px", color: "#888" }}>♥ {likeCount} likes</span>
-            <span style={{ fontSize: "12px", color: "#888" }}>👁 {artwork.views} views</span>
+          <div className="detail-stats">
+            <span>♥ {likeCount} {likeCount === 1 ? "like" : "likes"}</span>
+            {followerCount > 0 && (
+              <span>👥 {followerCount} {followerCount === 1 ? "follower" : "followers"}</span>
+            )}
           </div>
 
-          {/* Artist Row */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px", backgroundColor: "#f8f8f8", borderRadius: "12px", marginBottom: "20px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <img
-                src={artwork.artistImage}
-                alt={artwork.artist}
-                style={{ width: "44px", height: "44px", borderRadius: "50%", objectFit: "cover" }}
-              />
+          <div className="detail-artist-row">
+            <div className="detail-artist-info">
+              <div className="detail-artist-avatar">
+                {artistName[0].toUpperCase()}
+              </div>
               <div>
-                <p style={{ margin: 0, fontSize: "13px", fontWeight: "700", color: "#111" }}>{artwork.artist}</p>
-                <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#aaa" }}>Verified Artist</p>
+                <p className="detail-artist-name">{artistName}</p>
+                <p className="detail-artist-tag">Verified Artist</p>
               </div>
             </div>
-            <button
-              onClick={() => setFollowing(!following)}
-              style={{
-                padding: "8px 20px", borderRadius: "50px", fontSize: "11px",
-                fontWeight: "700", letterSpacing: "1px", cursor: "pointer",
-                border: following ? "1px solid #ddd" : "none",
-                backgroundColor: following ? "#fff" : "#111",
-                color: following ? "#888" : "#fff",
-                transition: "all 0.2s"
-              }}
-            >
-              {following ? "FOLLOWING" : "FOLLOW"}
-            </button>
-          </div>
-
-          {/* Purchase Button */}
-          <button
-            onClick={() => alert("Purchase flow coming soon!")}
-            style={{
-              width: "100%", padding: "16px", backgroundColor: "#c0392b",
-              border: "none", borderRadius: "12px", color: "#fff",
-              fontSize: "13px", fontWeight: "700", letterSpacing: "2px",
-              cursor: "pointer", marginBottom: "12px"
-            }}
-          >
-            PURCHASE ARTWORK
-          </button>
-
-          {/* Tags */}
-          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-            {artwork.tags.map((tag) => (
-              <span key={tag} style={{ padding: "5px 12px", backgroundColor: "#f0f0f0", borderRadius: "50px", fontSize: "11px", color: "#666", fontWeight: "600" }}>
-                {tag}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* Curator's Note */}
-        <div style={{ backgroundColor: "#fff", borderRadius: "16px", padding: "20px", marginTop: "12px" }}>
-          <h3 style={{ fontSize: "11px", fontWeight: "700", letterSpacing: "2px", color: "#aaa", margin: "0 0 12px", textTransform: "uppercase" }}>
-            Curator's Note
-          </h3>
-          <p style={{ fontSize: "14px", color: "#444", lineHeight: 1.7, margin: 0 }}>
-            {artwork.description}
-          </p>
-        </div>
-
-        {/* Specifications */}
-        <div style={{ backgroundColor: "#fff", borderRadius: "16px", padding: "20px", marginTop: "12px" }}>
-          <h3 style={{ fontSize: "11px", fontWeight: "700", letterSpacing: "2px", color: "#aaa", margin: "0 0 16px", textTransform: "uppercase" }}>
-            Specifications
-          </h3>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
-            {[
-              { label: "Medium", value: artwork.medium },
-              { label: "Dimensions", value: artwork.dimensions },
-              { label: "Year", value: artwork.year },
-              { label: "Edition", value: artwork.edition },
-              { label: "Category", value: artwork.category },
-              { label: "Signed by Artist", value: "Yes" },
-            ].map((spec) => (
-              <div key={spec.label}>
-                <p style={{ margin: 0, fontSize: "10px", color: "#aaa", letterSpacing: "1px", textTransform: "uppercase", fontWeight: "600" }}>
-                  {spec.label}
-                </p>
-                <p style={{ margin: "3px 0 0", fontSize: "13px", color: "#333", fontWeight: "600" }}>
-                  {spec.value}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Related Works */}
-        <div style={{ marginTop: "12px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-            <h3 style={{ fontSize: "11px", fontWeight: "700", letterSpacing: "2px", color: "#aaa", margin: 0, textTransform: "uppercase" }}>
-              Related Works
-            </h3>
-            <button onClick={() => navigate("/gallery")} style={{ background: "none", border: "none", fontSize: "11px", color: "#c0392b", cursor: "pointer", fontWeight: "700", letterSpacing: "1px" }}>
-              VIEW ALL
-            </button>
-          </div>
-          <div style={{ display: "flex", gap: "12px", overflowX: "auto", paddingBottom: "8px" }}>
-            {relatedWorks.map((work) => (
-              <div
-                key={work.id}
-                onClick={() => navigate(`/artwork/${work.id}`)}
-                style={{ flexShrink: 0, width: "140px", cursor: "pointer" }}
-              >
-                <div style={{ width: "140px", height: "140px", borderRadius: "12px", overflow: "hidden", backgroundColor: "#111" }}>
-                  <img src={work.image} alt={work.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                </div>
-                <p style={{ margin: "8px 0 2px", fontSize: "12px", fontWeight: "700", color: "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {work.title}
-                </p>
-                <p style={{ margin: 0, fontSize: "11px", color: "#aaa" }}>{work.artist}</p>
-                <p style={{ margin: "2px 0 0", fontSize: "12px", fontWeight: "700", color: "#c0392b" }}>NPR {work.price}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Comments */}
-        <div style={{ backgroundColor: "#fff", borderRadius: "16px", padding: "20px", marginTop: "12px" }}>
-          <h3 style={{ fontSize: "11px", fontWeight: "700", letterSpacing: "2px", color: "#aaa", margin: "0 0 16px", textTransform: "uppercase" }}>
-            Collector Insights
-          </h3>
-
-          {/* Comment Input */}
-          <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
-            <div style={{ width: "36px", height: "36px", borderRadius: "50%", backgroundColor: "#111", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: "13px", fontWeight: "700" }}>
-              Y
-            </div>
-            <div style={{ flex: 1, display: "flex", gap: "8px" }}>
-              <input
-                type="text"
-                placeholder="Add your impression..."
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleComment()}
-                style={{
-                  flex: 1, padding: "10px 14px", backgroundColor: "#f5f5f5",
-                  border: "1px solid #eee", borderRadius: "50px",
-                  fontSize: "13px", color: "#333", outline: "none"
-                }}
-              />
+            <div className="detail-artist-actions">
               <button
-                onClick={handleComment}
-                style={{ padding: "10px 16px", backgroundColor: "#111", border: "none", borderRadius: "50px", color: "#fff", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}
+                className={`detail-follow-btn${following ? " detail-follow-btn--following" : ""}`}
+                onClick={handleFollow}
+                disabled={followLoading}
               >
-                POST
+                {following ? "FOLLOWING" : "FOLLOW"}
+              </button>
+              <button
+                className="detail-message-btn"
+                onClick={() => navigate(`/chat/${artwork.artist.id}`)}
+              >
+                MESSAGE
               </button>
             </div>
           </div>
 
-          {/* Comment List */}
-          {commentList.map((c) => (
-            <div key={c.id} style={{ display: "flex", gap: "12px", marginBottom: "16px" }}>
-              <div style={{ width: "36px", height: "36px", borderRadius: "50%", backgroundColor: "#e0e0e0", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: "700", color: "#555" }}>
-                {c.name[0]}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "4px" }}>
-                  <span style={{ fontSize: "13px", fontWeight: "700", color: "#111" }}>{c.name}</span>
-                  <span style={{ fontSize: "11px", color: "#bbb" }}>{c.time}</span>
+          {artwork.forSale ? (
+            <button
+              className="detail-purchase-btn"
+              onClick={handleBuyNow}
+              disabled={orderLoading || orderSuccess}
+            >
+              {orderSuccess
+                ? "✓ ORDER PLACED! REDIRECTING..."
+                : orderLoading
+                ? "PLACING ORDER..."
+                : "BUY NOW"}
+            </button>
+          ) : (
+            <div className="detail-not-for-sale">Not for sale</div>
+          )}
+
+          <div className="detail-tags">
+            {artwork.category && <span className="detail-tag">{artwork.category}</span>}
+            {artwork.medium && <span className="detail-tag">{artwork.medium}</span>}
+          </div>
+        </div>
+
+        {artwork.description && (
+          <div className="detail-card">
+            <h3 className="detail-section-label">Curator's Note</h3>
+            <p className="detail-description">{artwork.description}</p>
+          </div>
+        )}
+
+        <div className="detail-card">
+          <h3 className="detail-section-label">Specifications</h3>
+          <div className="detail-specs">
+            {[
+              { label: "Medium", value: artwork.medium },
+              { label: "Dimensions", value: artwork.dimensions },
+              { label: "Category", value: artwork.category },
+              { label: "For Sale", value: artwork.forSale ? "Yes" : "No" },
+            ]
+              .filter((s) => s.value)
+              .map((spec) => (
+                <div key={spec.label} className="detail-spec-item">
+                  <p className="detail-spec-label">{spec.label}</p>
+                  <p className="detail-spec-value">{spec.value}</p>
                 </div>
-                <p style={{ margin: 0, fontSize: "13px", color: "#555", lineHeight: 1.5 }}>{c.text}</p>
+              ))}
+          </div>
+        </div>
+
+        <div className="detail-card">
+          <h3 className="detail-section-label">
+            Collector Insights {comments.length > 0 && `(${comments.length})`}
+          </h3>
+
+          <div className="detail-comment-input-row">
+            <div className="detail-avatar">Y</div>
+            <div className="detail-comment-input-wrap">
+              <input
+                type="text"
+                placeholder="Add your impression..."
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleComment()}
+                className="detail-comment-input"
+                disabled={commentLoading}
+              />
+              <button
+                className="detail-comment-post-btn"
+                onClick={handleComment}
+                disabled={commentLoading || !commentText.trim()}
+              >
+                {commentLoading ? "..." : "POST"}
+              </button>
+            </div>
+          </div>
+
+          {comments.length === 0 && (
+            <p className="detail-no-comments">Be the first to leave an impression.</p>
+          )}
+
+          {comments.map((c) => (
+            <div key={c.id} className="detail-comment">
+              <div className="detail-avatar detail-avatar--sm">
+                {(c.user?.name || c.user?.email || "?")[0].toUpperCase()}
+              </div>
+              <div className="detail-comment-body">
+                <div className="detail-comment-meta">
+                  <span className="detail-comment-name">
+                    {c.user?.name || c.user?.email || "Anonymous"}
+                  </span>
+                  <span className="detail-comment-time">{formatTime(c.createdAt)}</span>
+                </div>
+                <p className="detail-comment-text">{c.text}</p>
               </div>
             </div>
           ))}
@@ -306,30 +378,20 @@ export default function ArtworkDetail() {
 
       </div>
 
-      {/* Bottom Navigation */}
-      <nav style={{
-        position: "fixed", bottom: 0, left: 0, right: 0,
-        backgroundColor: "#fff", borderTop: "1px solid #eee",
-        display: "flex", justifyContent: "space-around",
-        alignItems: "center", padding: "10px 0", zIndex: 50
-      }}>
+      <nav className="detail-bottom-nav">
         {[
           { icon: "⌂", label: "Home", path: "/home" },
           { icon: "🔍", label: "Search", path: "/gallery" },
-          { icon: "＋", label: "Post", path: "/upload" },
+          { icon: "+", label: "Post", path: "/upload" },
           { icon: "👤", label: "Profile", path: "/profile" },
         ].map((item) => (
           <button
             key={item.label}
             onClick={() => navigate(item.path)}
-            style={{
-              background: "none", border: "none", cursor: "pointer",
-              display: "flex", flexDirection: "column", alignItems: "center", gap: "3px",
-              color: "#aaa"
-            }}
+            className="detail-bottom-nav-btn"
           >
-            <span style={{ fontSize: "18px" }}>{item.icon}</span>
-            <span style={{ fontSize: "10px" }}>{item.label}</span>
+            <span className="detail-bottom-nav-icon">{item.icon}</span>
+            <span className="detail-bottom-nav-label">{item.label}</span>
           </button>
         ))}
       </nav>
