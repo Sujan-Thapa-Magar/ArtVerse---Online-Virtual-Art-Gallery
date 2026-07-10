@@ -13,6 +13,9 @@ import Notifications from "./pages/Notifications";
 import AdminDashboard from "./pages/AdminDashboard";
 import Chat from "./pages/Chat";
 import SuperAdmin from "./pages/SuperAdmin";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentFailure from "./pages/PaymentFailure";
+import PaymentKhaltiCallback from "./pages/PaymentKhaltiCallback";
 
 function App() {
   return (
@@ -21,23 +24,19 @@ function App() {
         <Routes>
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Register />} />
-          <Route path="/" element={<Register />} />
-          <Route path="/home" element={
-            <ProtectedRoute><Home /></ProtectedRoute>
-          } />
-          <Route path="/gallery" element={
-            <ProtectedRoute><Gallery /></ProtectedRoute>
-          } />
+
+          {/* Public browsing — no login required */}
+          <Route path="/" element={<Home />} />
+          <Route path="/home" element={<Home />} />
+          <Route path="/gallery" element={<Gallery />} />
+          <Route path="/artwork/:id" element={<ArtworkDetail />} />
+          <Route path="/exhibition/:id" element={<VirtualExhibition />} />
+
+          {/* Protected — requires login */}
           <Route path="/upload" element={
-            <ProtectedRoute><ArtworkUpload /></ProtectedRoute>
-          } />
-          <Route path="/artwork/:id" element={
-            <ProtectedRoute><ArtworkDetail /></ProtectedRoute>
-          } />
-          <Route path="/exhibition" element={
-            <ProtectedRoute><VirtualExhibition /></ProtectedRoute>} />
+          <ProtectedRoute allowedRoles={["ARTIST"]}><ArtworkUpload /></ProtectedRoute>} />
           <Route path="/dashboard" element={
-            <ProtectedRoute><ArtistDashboard /></ProtectedRoute>} />
+          <ProtectedRoute allowedRoles={["ARTIST"]}><ArtistDashboard /></ProtectedRoute>} />
           <Route path="/profile" element={
             <ProtectedRoute><BuyerProfile/></ProtectedRoute>} />
           <Route path="/notification" element={
@@ -50,6 +49,16 @@ function App() {
             <ProtectedRoute><Chat/></ProtectedRoute>} />
           <Route path="/superadmin" element={
             <ProtectedRoute><SuperAdmin/></ProtectedRoute>} />
+
+          {/* eSewa payment redirect targets */}
+          <Route path="/payment/success" element={
+            <ProtectedRoute><PaymentSuccess/></ProtectedRoute>} />
+          <Route path="/payment/failure" element={
+            <ProtectedRoute><PaymentFailure/></ProtectedRoute>} />
+
+          {/* Khalti payment redirect target */}
+          <Route path="/payment/khalti/callback" element={
+            <ProtectedRoute><PaymentKhaltiCallback/></ProtectedRoute>} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

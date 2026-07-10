@@ -1,296 +1,186 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import "./BuyerProfile.css";
+import Navbar from "../components/Navbar";
 
 const API = "http://localhost:8080";
-
-function getToken() {
-  return localStorage.getItem("token");
-}
-
+function getToken() { return localStorage.getItem("token"); }
 function getCurrentUser() {
-  const token = getToken();
-  if (!token) return null;
-  try {
-    return JSON.parse(atob(token.split(".")[1]));
-  } catch {
-    return null;
-  }
+  const t = getToken(); if (!t) return null;
+  try { return JSON.parse(atob(t.split(".")[1])); } catch { return null; }
 }
+const statusCls = {
+  delivered:    "bg-green-50 text-green-700 border border-green-200",
+  "in-transit": "bg-amber-50 text-amber-700 border border-amber-200",
+  pending:      "bg-stone-100 text-stone-500 border border-stone-200",
+};
 
 export default function BuyerProfile() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("Orders");
-  const [profile, setProfile] = useState(null);
-  const [orders, setOrders] = useState([]);
-  const [liked, setLiked] = useState([]);
+  const [profile, setProfile]     = useState(null);
+  const [orders, setOrders]       = useState([]);
+  const [liked, setLiked]         = useState([]);
   const [following, setFollowing] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading]     = useState(true);
+  const [unread, setUnread]       = useState(0);
 
   const token = getToken();
   const headers = { Authorization: `Bearer ${token}` };
 
   useEffect(() => {
-    fetchAll();
-    fetch(`${API}/api/notifications/unread-count`, { headers })
-      .then(res => res.json())
-      .then(data => setUnreadCount(data.unreadCount || 0))
-      .catch(() => {});
+    (async () => {
+      setLoading(true);
+      try {
+        const [oR,lR,fR,nR] = await Promise.all([
+          fetch(`${API}/api/orders/my`,{headers}), fetch(`${API}/api/likes/my`,{headers}),
+          fetch(`${API}/api/follows/following`,{headers}), fetch(`${API}/api/notifications/unread-count`,{headers}),
+        ]);
+        const oD=oR.ok?await oR.json():[]; const lD=lR.ok?await lR.json():[]; const fD=fR.ok?await fR.json():[];
+        setOrders(oD); setLiked(lD); setFollowing(fD);
+        if(nR.ok){const n=await nR.json(); setUnread(n.unreadCount||0);}
+        if(oD.length>0) setProfile(oD[0].buyer);
+        else { const u=getCurrentUser(); setProfile({name:u?.sub||"User",createdAt:null}); }
+      } catch(e){console.error(e);}
+      finally{setLoading(false);}
+    })();
   }, []);
 
-  async function fetchAll() {
-    setLoading(true);
-    try {
-      const [ordersRes, likedRes, followingRes] = await Promise.all([
-        fetch(`${API}/api/orders/my`, { headers }),
-        fetch(`${API}/api/likes/my`, { headers }),
-        fetch(`${API}/api/follows/following`, { headers }),
-      ]);
+  const handleLogout=()=>{localStorage.removeItem("token");navigate("/login");};
+  const initials=profile?.name?profile.name.split(" ").map(n=>n[0]).join("").toUpperCase():"?";
+  const memberSince=profile?.createdAt?new Date(profile.createdAt).getFullYear():null;
 
-      const ordersData = ordersRes.ok ? await ordersRes.json() : [];
-      const likedData = likedRes.ok ? await likedRes.json() : [];
-      const followingData = followingRes.ok ? await followingRes.json() : [];
-
-      setOrders(ordersData);
-      setLiked(likedData);
-      setFollowing(followingData);
-
-      if (ordersData.length > 0) {
-        setProfile(ordersData[0].buyer);
-      } else {
-        const user = getCurrentUser();
-        setProfile({ name: user?.sub || "User", createdAt: null });
-      }
-    } catch (err) {
-      console.error("Failed to fetch profile data", err);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    navigate("/login");
-  };
-
-  const initials = profile?.name
-    ? profile.name.split(" ").map((n) => n[0]).join("").toUpperCase()
-    : "?";
-
-  const memberSince = profile?.createdAt
-    ? new Date(profile.createdAt).getFullYear()
-    : null;
-
-  if (loading) {
-    return (
-      <div className="bp-page" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
-        <p style={{ color: "#aaa", fontSize: "14px" }}>Loading profile...</p>
+  if(loading) return (
+    <div className="min-h-screen bg-cream flex items-center justify-center">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{borderColor:"#dc2626",borderTopColor:"transparent"}}/>
+        <p className="text-stone-400 text-sm">Loading profile…</p>
       </div>
-    );
-  }
+    </div>
+  );
 
   return (
-    <div className="bp-page">
+    <div className="min-h-screen bg-cream pb-24">
 
-      {/* Navbar */}
-      <nav className="bp-navbar">
-        <button className="bp-menu-btn" onClick={() => setMenuOpen(!menuOpen)}>☰</button>
-        <span className="bp-logo" onClick={() => navigate("/home")} style={{ cursor: "pointer" }}>ArtVerse</span>
-        <div className="bp-nav-right">
-          <button className="bp-notif-btn" onClick={() => navigate("/notification")}>
-            🔔
-            {unreadCount > 0 && <span className="bp-notif-badge">{unreadCount}</span>}
-          </button>
-          <div className="bp-nav-avatar" onClick={() => navigate("/profile")}>
-            {initials[0] || "?"}
-          </div>
-        </div>
-      </nav>
-
-      {/* Slide-in Menu */}
-      {menuOpen && (
-        <div className="bp-menu-overlay" onClick={() => setMenuOpen(false)}>
-          <div className="bp-menu-drawer" onClick={(e) => e.stopPropagation()}>
-            <div className="bp-menu-header">
-              <span>Menu</span>
-              <button onClick={() => setMenuOpen(false)}>✕</button>
-            </div>
-            {[
-              { label: "🏠  Home", path: "/home" },
-              { label: "🖼  Gallery", path: "/gallery" },
-              { label: "🎭  Exhibition", path: "/exhibition" },
-              { label: "💬  Messages", path: "/chat" },
-              { label: "🔔  Notifications", path: "/notification" },
-              { label: "👤  My Profile", path: "/profile" },
-            ].map((item) => (
-              <button key={item.path} onClick={() => { navigate(item.path); setMenuOpen(false); }} className="bp-menu-item">
-                {item.label}
-              </button>
-            ))}
-            <div className="bp-menu-logout-wrap">
-              <button onClick={handleLogout} className="bp-menu-logout">🚪  Logout</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Navbar active="profile" />
 
       {/* Profile Header */}
-      <div className="bp-header">
-        <div className="bp-profile-row">
-          <div className="bp-profile-left">
-            <div className="bp-avatar-wrap">
-              {profile?.profilePhoto ? (
-                <img src={`${API}/${profile.profilePhoto}`} alt="avatar" />
-              ) : (
-                <div className="bp-avatar-placeholder">{initials[0]}</div>
-              )}
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-5">
+          <div className="flex items-center gap-4">
+            <div className="rounded-xl overflow-hidden flex-shrink-0 p-0.5" style={{width:80,height:80,border:"2px solid #dc2626",background:"#fef2f2"}}>
+              {profile?.profilePhoto
+                ?<img src={`${API}/${profile.profilePhoto}`} alt="avatar" className="w-full h-full object-cover rounded-lg"/>
+                :<div className="w-full h-full rounded-lg flex items-center justify-center" style={{background:"#fef2f2"}}>
+                  <span style={{fontFamily:"'Roboto',sans-serif",fontSize:32,fontWeight:600,color:"#dc2626"}}>{initials[0]}</span>
+                </div>}
             </div>
             <div>
-              <h1 className="bp-name">{profile?.name || "User"}</h1>
-              {memberSince && <p className="bp-since">Collector Since {memberSince}</p>}
-              <div className="bp-badges">
-                {orders.length >= 5 && <span className="bp-badge">Top Collector</span>}
-                {following.length >= 3 && <span className="bp-badge">Art Enthusiast</span>}
+              <h1 className="text-stone-900 mb-1" style={{fontFamily:"'Roboto',sans-serif",fontSize:"clamp(24px,5vw,32px)",fontWeight:600,margin:"0 0 4px"}}>{profile?.name||"User"}</h1>
+              {memberSince&&<p className="text-stone-400 tracking-widest uppercase mb-3" style={{fontSize:9}}>Collector Since {memberSince}</p>}
+              <div className="flex gap-2 flex-wrap">
+                {orders.length>=5&&<span className="text-xs font-bold tracking-widest uppercase px-2.5 py-1 rounded border" style={{borderColor:"#dc2626",color:"#dc2626",background:"#fef2f2",fontSize:9}}>Top Collector</span>}
+                {following.length>=3&&<span className="text-xs font-bold tracking-widest uppercase px-2.5 py-1 rounded border border-stone-300 text-stone-500 bg-stone-50" style={{fontSize:9}}>Art Enthusiast</span>}
               </div>
             </div>
           </div>
-
-          <div className="bp-stats">
-            <div className="bp-stat">
-              <span className="bp-stat-value">{orders.length}</span>
-              <span className="bp-stat-label">Purchased</span>
-            </div>
-            <div className="bp-stat-divider" />
-            <div className="bp-stat">
-              <span className="bp-stat-value">{liked.length}</span>
-              <span className="bp-stat-label">Saved</span>
-            </div>
-            <div className="bp-stat-divider" />
-            <div className="bp-stat">
-              <span className="bp-stat-value">{following.length}</span>
-              <span className="bp-stat-label">Following</span>
-            </div>
+          {/* Stats */}
+          <div className="flex items-center bg-white rounded-2xl border border-stone-200 shadow-sm px-2 py-4 self-start">
+            {[{v:orders.length,l:"Purchased"},{v:liked.length,l:"Saved"},{v:following.length,l:"Following"}].map((s,i)=>(
+              <div key={s.l} className="flex items-center">
+                <div className="text-center px-4 sm:px-5">
+                  <span className="block font-bold leading-none" style={{fontFamily:"'Roboto',sans-serif",fontSize:"clamp(22px,4vw,28px)",color:"#dc2626"}}>{s.v}</span>
+                  <span className="text-stone-400 tracking-widest uppercase mt-1 block" style={{fontSize:9}}>{s.l}</span>
+                </div>
+                {i<2&&<div className="w-px h-7 bg-stone-200"/>}
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="bp-tabs">
-        {["Orders", "Saved Items", "Following"].map((tab) => (
-          <button
-            key={tab}
-            className={`bp-tab ${activeTab === tab ? "active" : ""}`}
-            onClick={() => setActiveTab(tab)}
-          >
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 mt-6 border-b border-stone-200 flex overflow-x-auto" style={{scrollbarWidth:"none"}}>
+        {["Orders","Saved Items","Following"].map(tab=>(
+          <button key={tab} onClick={()=>setActiveTab(tab)}
+            className="flex-shrink-0 bg-transparent border-none border-l-0 border-r-0 border-t-0 py-2.5 mr-6 text-sm cursor-pointer transition-all whitespace-nowrap"
+            style={{borderBottom:`2px solid ${activeTab===tab?"#dc2626":"transparent"}`,color:activeTab===tab?"#1c1917":"#a8a29e",fontWeight:activeTab===tab?700:400}}>
             {tab}
           </button>
         ))}
       </div>
 
       {/* Body */}
-      <div className="bp-body">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-5">
 
-        {activeTab === "Orders" && (
-          <div className="bp-orders-section" style={{ gridColumn: "1 / -1" }}>
-            <p className="bp-orders-label">{orders.length} Order{orders.length !== 1 ? "s" : ""}</p>
-            {orders.length === 0 ? (
-              <p style={{ color: "#aaa", fontSize: "14px" }}>No orders yet.</p>
-            ) : (
-              orders.map((order) => (
-                <div key={order.id} className="bp-order-item">
-                  <div className="bp-order-thumb">
-                    <img src={order.artwork.imageUrl} alt={order.artwork.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        {activeTab==="Orders"&&(
+          <div>
+            <p className="text-stone-400 tracking-widest uppercase mb-4" style={{fontSize:10}}>{orders.length} Order{orders.length!==1?"s":""}</p>
+            {orders.length===0
+              ?<div className="flex flex-col items-center py-16 gap-3"><span className="text-5xl opacity-20">🖼</span><p className="text-stone-400 text-sm">No orders yet. Start collecting.</p></div>
+              :orders.map(order=>(
+                <div key={order.id} className="flex items-start gap-3 sm:gap-4 py-4 border-b border-stone-100">
+                  <div className="rounded-lg overflow-hidden flex-shrink-0 bg-stone-100 border border-stone-200" style={{width:60,height:60}}>
+                    <img src={order.artwork.imageUrl} alt={order.artwork.title} className="w-full h-full object-cover"/>
                   </div>
-                  <div className="bp-order-info">
-                    <p className="bp-order-title">{order.artwork.title}</p>
-                    <p className="bp-order-artist">{order.artwork.artist.name}</p>
-                    <p className="bp-order-price-label">Price Paid</p>
-                    <p className="bp-order-price">Rs. {Number(order.pricePaid).toLocaleString()}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-stone-900 mb-0.5 truncate">{order.artwork.title}</p>
+                    <p className="text-xs text-stone-400 mb-2 truncate">{order.artwork.artist.name}</p>
+                    <p className="text-xs text-stone-300 uppercase tracking-widest mb-0.5" style={{fontSize:9}}>Price Paid</p>
+                    <p className="text-sm font-bold" style={{color:"#dc2626"}}>Rs. {Number(order.pricePaid).toLocaleString()}</p>
                   </div>
-                  <div className="bp-order-right">
-                    <span className={`bp-status ${order.status.toLowerCase().replace("_", "-")}`}>
-                      {order.status.replace("_", " ")}
-                    </span>
-                  </div>
+                  <span className={`text-xs font-bold tracking-widest uppercase px-2 py-1 rounded-full whitespace-nowrap flex-shrink-0 ${statusCls[order.status.toLowerCase().replace("_","-")]||statusCls.pending}`} style={{fontSize:9}}>
+                    {order.status.replace("_"," ")}
+                  </span>
                 </div>
-              ))
-            )}
+              ))}
           </div>
         )}
 
-        {activeTab === "Saved Items" && (
-          <div className="bp-orders-section" style={{ gridColumn: "1 / -1" }}>
-            <p className="bp-orders-label">{liked.length} Saved Artwork{liked.length !== 1 ? "s" : ""}</p>
-            {liked.length === 0 ? (
-              <p style={{ color: "#aaa", fontSize: "14px" }}>No saved artworks yet.</p>
-            ) : (
-              <div className="bp-liked-grid">
-                {liked.map((artwork) => (
-                  <a key={artwork.id} href={`/artwork/${artwork.id}`} className="bp-liked-card">
-                    <img src={artwork.imageUrl} alt={artwork.title} className="bp-liked-img" />
-                    <div className="bp-liked-info">
-                      <p className="bp-liked-title">{artwork.title}</p>
-                      <p className="bp-liked-artist">{artwork.artist.name}</p>
+        {activeTab==="Saved Items"&&(
+          <div>
+            <p className="text-stone-400 tracking-widest uppercase mb-4" style={{fontSize:10}}>{liked.length} Saved Artwork{liked.length!==1?"s":""}</p>
+            {liked.length===0
+              ?<div className="flex flex-col items-center py-16 gap-3"><span className="text-5xl opacity-20">♥</span><p className="text-stone-400 text-sm">No saved artworks yet.</p></div>
+              :<div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {liked.map(artwork=>(
+                  <a key={artwork.id} href={`/artwork/${artwork.id}`} className="relative block rounded-xl overflow-hidden border border-stone-200 bg-white hover:shadow-lg transition-shadow" style={{textDecoration:"none"}}>
+                    <div className="overflow-hidden" style={{aspectRatio:"4/3"}}>
+                      <img src={artwork.imageUrl} alt={artwork.title} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"/>
                     </div>
-                    <span className="bp-saved-heart">♥</span>
+                    <div className="p-2.5">
+                      <p className="text-sm font-semibold text-stone-900 truncate" style={{fontFamily:"'Roboto',sans-serif"}}>{artwork.title}</p>
+                      <p className="text-xs text-stone-400 truncate">{artwork.artist.name}</p>
+                    </div>
+                    <span className="absolute top-2 right-2 text-red-500 text-base">♥</span>
                   </a>
                 ))}
-              </div>
-            )}
+              </div>}
           </div>
         )}
 
-        {activeTab === "Following" && (
-          <div className="bp-orders-section" style={{ gridColumn: "1 / -1" }}>
-            <p className="bp-orders-label">Following {following.length} Artist{following.length !== 1 ? "s" : ""}</p>
-            {following.length === 0 ? (
-              <p style={{ color: "#aaa", fontSize: "14px" }}>Not following any artists yet.</p>
-            ) : (
-              following.map((artist) => (
-                <div key={artist.id} className="bp-order-item">
-                  <div className="bp-avatar-wrap" style={{ width: 48, height: 48, flexShrink: 0 }}>
-                    {artist.profilePhoto ? (
-                      <img src={`${API}/${artist.profilePhoto}`} alt={artist.name} />
-                    ) : (
-                      <div className="bp-avatar-placeholder" style={{ fontSize: 18 }}>
-                        {artist.name[0].toUpperCase()}
-                      </div>
-                    )}
+        {activeTab==="Following"&&(
+          <div>
+            <p className="text-stone-400 tracking-widest uppercase mb-4" style={{fontSize:10}}>Following {following.length} Artist{following.length!==1?"s":""}</p>
+            {following.length===0
+              ?<div className="flex flex-col items-center py-16 gap-3"><span className="text-5xl opacity-20">🎨</span><p className="text-stone-400 text-sm">Not following any artists yet.</p></div>
+              :following.map(artist=>(
+                <div key={artist.id} className="flex items-center gap-3 sm:gap-4 py-3.5 border-b border-stone-100">
+                  <div className="w-11 h-11 rounded-full overflow-hidden flex-shrink-0 border border-stone-200">
+                    {artist.profilePhoto
+                      ?<img src={`${API}/${artist.profilePhoto}`} alt={artist.name} className="w-full h-full object-cover"/>
+                      :<div className="w-full h-full flex items-center justify-center" style={{background:"#fef2f2"}}>
+                        <span style={{fontFamily:"'Roboto',sans-serif",fontSize:18,color:"#dc2626",fontWeight:600}}>{artist.name[0].toUpperCase()}</span>
+                      </div>}
                   </div>
-                  <div className="bp-order-info">
-                    <p className="bp-order-title">{artist.name}</p>
-                    <p className="bp-order-artist">{artist.bio || "Nepali Artist"}</p>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-stone-900 mb-0.5 truncate">{artist.name}</p>
+                    <p className="text-xs text-stone-400 truncate">{artist.bio||"Nepali Artist"}</p>
                   </div>
                 </div>
-              ))
-            )}
+              ))}
           </div>
         )}
-
       </div>
-
-      {/* Bottom Nav */}
-      <nav className="bp-bottom-nav">
-        <button onClick={() => navigate("/home")} className="bp-bottom-btn">
-          <span>🏠</span><span>Home</span>
-        </button>
-        <button onClick={() => navigate("/gallery")} className="bp-bottom-btn">
-          <span>🖼</span><span>Gallery</span>
-        </button>
-        <button onClick={() => navigate("/chat")} className="bp-bottom-btn">
-          <span>💬</span><span>Chat</span>
-        </button>
-        <button onClick={() => navigate("/notification")} className="bp-bottom-btn" style={{ position: "relative" }}>
-          <span>🔔</span>
-          {unreadCount > 0 && <span className="bp-bottom-dot" />}
-          <span>Alerts</span>
-        </button>
-        <button onClick={() => navigate("/profile")} className="bp-bottom-btn active">
-          <span>👤</span><span>Profile</span>
-        </button>
-      </nav>
 
     </div>
   );

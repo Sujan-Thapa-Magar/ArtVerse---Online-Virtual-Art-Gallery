@@ -1,271 +1,220 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 
-const categories = [
-  "ALL COLLECTIONS",
-  "RENAISSANCE",
-  "IMPRESSIONISM",
-  "MINIMALIST",
-  "CONTEMPORARY",
-  "SURREALISM",
-];
+const categories = ["ALL", "RENAISSANCE", "IMPRESSIONISM", "MINIMALIST", "CONTEMPORARY", "SURREALISM"];
 
 export default function Gallery() {
   const navigate = useNavigate();
+  const token = localStorage.getItem("token");
   const [artworks, setArtworks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [activeCategory, setActiveCategory] = useState("ALL COLLECTIONS");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [activeCat, setActiveCat] = useState("ALL");
+  const [search, setSearch] = useState("");
   const [liked, setLiked] = useState({});
+  const [hoverId, setHoverId] = useState(null);
 
   useEffect(() => {
-    const fetchArtworks = async () => {
-      const token = localStorage.getItem("token");
-
-      if (!token) {
-        navigate("/login");
-        return;
-      }
-
+    (async () => {
       try {
-        const response = await fetch("http://localhost:8080/api/artworks", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (response.status === 401 || response.status === 403) {
-          // Token expired or invalid — go back to login
-          localStorage.removeItem("token");
-          navigate("/login");
-          return;
-        }
-
-        if (!response.ok) {
-          throw new Error("Failed to load artworks.");
-        }
-
-        const data = await response.json();
-        setArtworks(data);
-      } catch (err) {
-        setError("Could not connect to server. Make sure the backend is running.");
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const r = await fetch("http://localhost:8080/api/artworks", { headers });
+        if (!r.ok) throw new Error();
+        setArtworks(await r.json());
+      } catch {
+        setError("Could not connect to server.");
       } finally {
         setLoading(false);
       }
-    };
+    })();
+  }, [token]);
 
-    fetchArtworks();
-  }, []);
-
-  const toggleLike = (id) => {
-    setLiked((prev) => ({ ...prev, [id]: !prev[id] }));
+  const toggleLike = (e, id) => {
+    e.stopPropagation();
+    if (!token) { navigate("/login"); return; }
+    setLiked(p => ({ ...p, [id]: !p[id] }));
   };
 
-  const getArtistName = (artist) => {
-    if (!artist) return "Unknown Artist";
-    if (typeof artist === "string") return artist;
-    return artist.name || artist.email || "Unknown Artist";
+  const artistName = a => {
+    if (!a) return "Unknown Artist";
+    return typeof a === "string" ? a : (a.name || a.email || "Unknown Artist");
   };
 
-  const getImageUrl = (imageUrl) => {
-    if (!imageUrl) return "https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&q=80";
-    if (imageUrl.startsWith("http")) return imageUrl;
-    return `http://localhost:8080${imageUrl}`;
+  const imgUrl = u => {
+    if (!u) return "https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=800&q=80";
+    return u.startsWith("http") ? u : `http://localhost:8080${u}`;
   };
 
-  const filtered = artworks.filter((art) => {
-    const matchesCategory =
-      activeCategory === "ALL COLLECTIONS" ||
-      (art.category || "").toUpperCase() === activeCategory;
-    const matchesSearch =
-      (art.title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-      getArtistName(art.artist).toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+  const filtered = artworks.filter(art => {
+    const cm = activeCat === "ALL" || (art.category || "").toUpperCase() === activeCat;
+    const q = search.toLowerCase();
+    return cm && ((art.title || "").toLowerCase().includes(q) || artistName(art.artist).toLowerCase().includes(q));
   });
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#f8f8f8", fontFamily: "Inter, sans-serif", paddingBottom: "80px" }}>
+    <div className="min-h-screen bg-cream text-stone-900 selection:bg-red-100 selection:text-red-600">
 
-      {/* Top Navigation */}
-      <nav style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "14px 20px", borderBottom: "1px solid #eee",
-        position: "sticky", top: 0, backgroundColor: "#fff", zIndex: 50
-      }}>
-        <span
-          style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "22px", fontWeight: "700", cursor: "pointer", letterSpacing: "2px" }}
-          onClick={() => navigate("/home")}
-        >
-          ArtVerse
-        </span>
-        <div style={{ display: "flex", gap: "24px", alignItems: "center" }}>
-          <button onClick={() => navigate("/home")} style={{ background: "none", border: "none", fontSize: "11px", letterSpacing: "2px", color: "#aaa", cursor: "pointer", fontWeight: "600" }}>HOME</button>
-          <button style={{ background: "none", border: "none", fontSize: "11px", letterSpacing: "2px", color: "#111", cursor: "pointer", fontWeight: "700", borderBottom: "2px solid #111", paddingBottom: "2px" }}>SEARCH</button>
-          <button onClick={() => navigate("/notification")} style={{ background: "none", border: "none", fontSize: "11px", letterSpacing: "2px", color: "#aaa", cursor: "pointer", fontWeight: "600" }}>NOTIFICATIONS</button>
-          <button onClick={() => navigate("/profile")} style={{ background: "none", border: "none", fontSize: "11px", letterSpacing: "2px", color: "#aaa", cursor: "pointer", fontWeight: "600" }}>PROFILE</button>
-        </div>
-        <div
-          style={{ width: "36px", height: "36px", borderRadius: "50%", backgroundColor: "#444", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: "13px", fontWeight: "700", cursor: "pointer" }}
-          onClick={() => navigate("/profile")}
-        >
-          A
-        </div>
-      </nav>
+      <Navbar active="gallery" />
 
-      {/* Search Bar */}
-      <div style={{ backgroundColor: "#fff", padding: "16px 20px 12px" }}>
-        <div style={{ position: "relative", maxWidth: "600px", margin: "0 auto" }}>
-          <span style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: "#aaa", fontSize: "14px" }}>🔍</span>
-          <input
-            type="text"
-            placeholder="Search movements, artists, or mediums..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{
-              width: "100%", padding: "12px 16px 12px 42px",
-              backgroundColor: "#f5f5f5", border: "1px solid #e8e8e8",
-              borderRadius: "50px", fontSize: "13px", color: "#333",
-              outline: "none", boxSizing: "border-box"
-            }}
-          />
-        </div>
-      </div>
-
-      {/* Category Pills */}
-      <div style={{ backgroundColor: "#fff", padding: "8px 20px 12px", borderBottom: "1px solid #eee", display: "flex", gap: "8px", overflowX: "auto" }}>
-        {categories.map((cat) => (
-          <button
-            key={cat}
-            onClick={() => setActiveCategory(cat)}
-            style={{
-              flexShrink: 0, padding: "6px 14px",
-              borderRadius: "50px", fontSize: "10px", fontWeight: "700",
-              letterSpacing: "1.5px", border: "1px solid",
-              cursor: "pointer", transition: "all 0.2s",
-              backgroundColor: activeCategory === cat ? "#111" : "#fff",
-              color: activeCategory === cat ? "#fff" : "#888",
-              borderColor: activeCategory === cat ? "#111" : "#ddd",
-            }}
-          >
-            {cat}
-          </button>
-        ))}
-      </div>
-
-      {/* Loading State */}
-      {loading && (
-        <div style={{ textAlign: "center", padding: "80px", color: "#aaa", fontSize: "13px" }}>
-          Loading artworks...
-        </div>
-      )}
-
-      {/* Error State */}
-      {!loading && error && (
-        <div style={{ textAlign: "center", padding: "80px 20px", color: "#e05a5a", fontSize: "14px" }}>
-          <p style={{ margin: "0 0 16px" }}>{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            style={{ padding: "10px 24px", backgroundColor: "#111", color: "#fff", border: "none", borderRadius: "50px", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}
-          >
-            RETRY
-          </button>
-        </div>
-      )}
-
-      {/* Artwork Grid */}
-      {!loading && !error && (
-        <div style={{ padding: "16px 12px" }}>
-          {filtered.length === 0 ? (
-            <div style={{ textAlign: "center", color: "#aaa", padding: "80px 0", fontSize: "14px" }}>
-              {searchQuery
-                ? `No artworks found for "${searchQuery}"`
-                : artworks.length === 0
-                ? "No artworks yet. Be the first to upload!"
-                : `No artworks in ${activeCategory}`}
+      {/* Hero / Header Section */}
+      <div className="relative overflow-hidden pt-12 pb-6 px-6 lg:px-12">
+        <div className="max-w-7xl mx-auto text-center md:text-left flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-stone-200/60 pb-8">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 text-red-600 mb-3">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
+              <span className="uppercase tracking-[0.25em] font-bold text-[9px]">Live Collection</span>
             </div>
-          ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-              {filtered.map((art) => (
+            <h1 className="text-stone-900 font-black tracking-tight leading-tight" style={{ fontSize: "clamp(32px, 5vw, 52px)" }}>
+              The Curated Gallery
+            </h1>
+            <p className="text-stone-500 text-sm max-w-md mt-2">Explore original masterpieces and contemporary discoveries directly from exceptional creators.</p>
+          </div>
+
+          {/* Search Input */}
+          <div className="relative w-full md:max-w-sm self-center md:self-end">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 text-xs pointer-events-none">🔍</span>
+            <input
+              type="text"
+              placeholder="Search masterworks, artists..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full py-3.5 pr-4 rounded-xl text-sm text-stone-900 outline-none border transition-all duration-300 bg-white border-stone-200 shadow-sm focus:border-red-600 focus:ring-1 focus:ring-red-600 pl-11"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Category Filter Strip */}
+      <div className="sticky top-16 z-30 bg-cream/80 backdrop-blur-md border-b border-stone-200/40 py-2">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 flex gap-2 overflow-x-auto no-scrollbar">
+          {categories.map(cat => {
+            const a = activeCat === cat;
+            return (
+              <button
+                key={cat}
+                onClick={() => setActiveCat(cat)}
+                className={`flex-shrink-0 border-none py-2 px-4 text-[10px] font-bold tracking-[0.15em] cursor-pointer transition-all duration-300 rounded-full ${
+                  a ? "bg-red-600 text-white" : "bg-transparent text-stone-500 hover:text-red-600"
+                }`}
+              >
+                {cat}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Main Content Layout */}
+      <div className="max-w-7xl mx-auto px-6 lg:px-12 py-8">
+        {!loading && !error && filtered.length > 0 && (
+          <div className="flex items-center justify-between mb-8">
+            <p className="text-stone-400 tracking-wider uppercase text-[10px] font-bold">{filtered.length} Work{filtered.length !== 1 ? "s" : ""} Unveiled</p>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading && (
+          <div className="flex flex-col items-center justify-center py-32 gap-4">
+            <div className="w-6 h-6 rounded-full border-[2px] border-stone-200 border-t-red-600 animate-spin" />
+            <p className="text-stone-400 text-xs tracking-widest uppercase font-bold">Curating Feed…</p>
+          </div>
+        )}
+
+        {/* Error State */}
+        {!loading && error && (
+          <div className="flex flex-col items-center py-24 gap-4 max-w-md mx-auto text-center">
+            <span className="text-4xl">🕊️</span>
+            <p className="text-stone-600 text-sm">{error}</p>
+            <button onClick={() => window.location.reload()} className="text-xs font-bold tracking-widest uppercase px-6 py-3 rounded-xl text-white border-none cursor-pointer bg-red-600 hover:bg-red-700 transition-colors">Reset Session</button>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && !error && filtered.length === 0 && (
+          <div className="flex flex-col items-center py-28 gap-4 text-center max-w-sm mx-auto">
+            <span className="text-3xl grayscale opacity-40">🎨</span>
+            <h3 className="font-bold text-lg text-stone-800">No matching works found</h3>
+            <p className="text-stone-400 text-xs leading-relaxed">Adjust your criteria or query parameters. The artwork might be archived or filed under a separate movement.</p>
+          </div>
+        )}
+
+        {/* Artwork Grid */}
+        {!loading && !error && filtered.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-12">
+            {filtered.map(art => {
+              const isLiked = liked[art.id];
+              const isHov = hoverId === art.id;
+              return (
                 <div
                   key={art.id}
                   onClick={() => navigate(`/artwork/${art.id}`)}
-                  style={{ borderRadius: "16px", overflow: "hidden", cursor: "pointer", backgroundColor: "#fff", boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}
+                  onMouseEnter={() => setHoverId(art.id)}
+                  onMouseLeave={() => setHoverId(null)}
+                  className="cursor-pointer flex flex-col group"
                 >
-                  <div style={{ position: "relative", height: "200px", overflow: "hidden", backgroundColor: "#222" }}>
+                  {/* Canvas framing */}
+                  <div className="relative overflow-hidden bg-white shadow-sm border border-stone-200/60 rounded-lg transition-all duration-500 ease-out group-hover:shadow-xl group-hover:shadow-stone-950/5 mb-4" style={{ aspectRatio: "4/5" }}>
                     <img
-                      src={getImageUrl(art.imageUrl)}
+                      src={imgUrl(art.imageUrl)}
                       alt={art.title}
-                      style={{ width: "100%", height: "200px", objectFit: "cover", display: "block", transition: "transform 0.4s ease" }}
-                      onMouseEnter={(e) => e.target.style.transform = "scale(1.05)"}
-                      onMouseLeave={(e) => e.target.style.transform = "scale(1)"}
-                      onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&q=80"; }}
+                      className="w-full h-full object-cover transition-transform duration-700 ease-out scale-100 group-hover:scale-[1.03]"
+                      onError={e => { e.target.src = "https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=800&q=80"; }}
                     />
+
+                    <div className={`absolute inset-0 bg-gradient-to-t from-stone-950/40 via-stone-900/0 to-transparent transition-opacity duration-300 ${isHov ? "opacity-100" : "opacity-0"}`} />
+
+                    {/* Heart interaction */}
                     <button
-                      onClick={(e) => { e.stopPropagation(); toggleLike(art.id); }}
+                      onClick={e => toggleLike(e, art.id)}
+                      className={`absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-300 backdrop-blur-md bg-white/90 shadow-md hover:bg-white ${isLiked ? "text-red-600" : "text-stone-400"}`}
                       style={{
-                        position: "absolute", top: "10px", right: "10px",
-                        width: "32px", height: "32px", borderRadius: "50%",
-                        border: "none", cursor: "pointer", fontSize: "14px",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        backgroundColor: liked[art.id] ? "#e53e3e" : "rgba(255,255,255,0.85)",
-                        color: liked[art.id] ? "#fff" : "#bbb",
-                        boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
-                        transition: "all 0.2s"
+                        transform: isHov ? "translateY(0) scale(1)" : "translateY(-4px) scale(0.95)",
+                        opacity: isHov || isLiked ? 1 : 0
                       }}
                     >
-                      ♥
+                      {isLiked ? "♥" : "♡"}
                     </button>
+
+                    {/* Price tag reveal */}
+                    {art.forSale && art.price && (
+                      <div className={`absolute bottom-4 left-4 font-bold text-white transition-all duration-300 translate-y-2 ${isHov ? "opacity-100 translate-y-0" : "opacity-0"}`} style={{ fontSize: 15 }}>
+                        NPR {Number(art.price).toLocaleString()}
+                      </div>
+                    )}
                   </div>
 
-                  <div style={{ padding: "12px 14px 14px", backgroundColor: "#fff" }}>
-                    <p style={{ fontSize: "9px", color: "#aaa", letterSpacing: "1.5px", textTransform: "uppercase", margin: "0 0 4px", fontWeight: "600" }}>
-                      {art.medium || art.category || "Artwork"}
-                    </p>
-                    <p style={{ fontSize: "13px", fontWeight: "700", color: "#111", margin: "0 0 3px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {/* Typographic details */}
+                  <div className="flex flex-col flex-grow px-1">
+                    <span className="text-red-600 text-[9px] tracking-[0.2em] uppercase font-bold mb-1">
+                      {art.medium || art.category || "EXHIBIT"}
+                    </span>
+                    <h3 className="font-bold text-stone-900 tracking-tight leading-snug group-hover:text-red-600 transition-colors duration-200 text-base">
                       {art.title}
-                    </p>
-                    <p style={{ fontSize: "11px", color: "#888", margin: "0 0 6px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {getArtistName(art.artist)}
-                    </p>
-                    <p style={{ fontSize: "13px", fontWeight: "700", color: "#c0392b", margin: 0 }}>
-                      {art.forSale && art.price ? `NPR ${Number(art.price).toLocaleString()}` : "Not for sale"}
-                    </p>
+                    </h3>
+                    <p className="text-stone-400 text-xs mt-0.5 mb-3">{artistName(art.artist)}</p>
+
+                    <div className="mt-auto pt-3 border-t border-stone-100 flex items-center justify-between">
+                      {art.forSale && art.price ? (
+                        <span className="font-semibold text-stone-900 text-xs tracking-tight">NPR {Number(art.price).toLocaleString()}</span>
+                      ) : (
+                        <span className="text-stone-300 text-[10px] font-bold tracking-widest uppercase">Archived</span>
+                      )}
+
+                      <span className="text-[10px] font-bold tracking-widest text-stone-400 group-hover:text-red-600 group-hover:translate-x-1 transition-all duration-300 flex items-center gap-1">
+                        VIEW <span className="text-xs font-normal">→</span>
+                      </span>
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
+      </div>
 
-      {/* Bottom Navigation */}
-      <nav style={{
-        position: "fixed", bottom: 0, left: 0, right: 0,
-        backgroundColor: "#fff", borderTop: "1px solid #eee",
-        display: "flex", justifyContent: "space-around",
-        alignItems: "center", padding: "10px 0", zIndex: 50
-      }}>
-        {[
-          { icon: "⌂", label: "Home", path: "/home" },
-          { icon: "🔍", label: "Search", path: "/gallery" },
-          { icon: "＋", label: "Post", path: "/upload" },
-          { icon: "👤", label: "Profile", path: "/profile" },
-        ].map((item) => (
-          <button
-            key={item.label}
-            onClick={() => navigate(item.path)}
-            style={{
-              background: "none", border: "none", cursor: "pointer",
-              display: "flex", flexDirection: "column", alignItems: "center", gap: "3px",
-              color: item.path === "/gallery" ? "#111" : "#aaa"
-            }}
-          >
-            <span style={{ fontSize: "18px" }}>{item.icon}</span>
-            <span style={{ fontSize: "10px", fontWeight: item.path === "/gallery" ? "700" : "400" }}>
-              {item.label}
-            </span>
-          </button>
-        ))}
-      </nav>
+      <Footer />
     </div>
   );
 }

@@ -1,1 +1,30 @@
 @import "tailwindcss";
+
+@theme {
+  /* Roboto everywhere — single font family for the whole site */
+  --font-sans: "Roboto", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  /* Chocolaty-white page background */
+  --color-cream: #faf6f0;
+}
+
+body {
+  @apply bg-cream text-stone-900 font-sans antialiased;
+}
+
+/* Hide horizontal scrollbars on filter strips / carousels */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: #d6d3d1;
+  border-radius: 4px;
+}

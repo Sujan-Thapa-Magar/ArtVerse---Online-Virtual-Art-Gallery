@@ -1,14 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-
-const featuredWorks = [
-  { id: 1, title: "Eternal Mandala", artist: "Sujan Shrestha", price: "NPR 12,400", image: "https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=300&q=80" },
-  { id: 2, title: "Himalayan Dawn", artist: "Priya Maharjan", price: "NPR 8,500", image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=300&q=80" },
-  { id: 3, title: "Forms & Silence", artist: "Rohan Gurung", price: "NPR 15,000", image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=300&q=80" },
-  { id: 4, title: "Community Paths", artist: "Nisha Tamang", price: "NPR 6,200", image: "https://images.unsplash.com/photo-1490730141103-6cac27aaab94?w=300&q=80" },
-  { id: 5, title: "Echoes of Time", artist: "Maya Thapa", price: "NPR 9,800", image: "https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=300&q=80" },
-];
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 
 function getCurrentUser() {
   const token = localStorage.getItem("token");
@@ -22,241 +15,150 @@ function getCurrentUser() {
 
 export default function Home() {
   const navigate = useNavigate();
-  const { logout } = useAuth();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [role, setRole] = useState("BUYER");
-  const [userName, setUserName] = useState("A");
+  const [exhibitionId, setExhibitionId] = useState(null);
+  const [featuredWorks, setFeaturedWorks] = useState([]);
 
   const token = localStorage.getItem("token");
+  const isGuest = !token;
 
   useEffect(() => {
     const user = getCurrentUser();
     if (user) setRole(user.role || "BUYER");
 
-    fetch("http://localhost:8080/api/notifications/unread-count", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(res => res.json())
-      .then(data => setUnreadCount(data.unreadCount || 0))
-      .catch(() => {});
-
+    const artworksHeaders = token ? { Authorization: `Bearer ${token}` } : {};
     fetch("http://localhost:8080/api/artworks", {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: artworksHeaders,
     })
       .then(res => res.json())
       .then(data => {
-        const u = getCurrentUser();
-        if (u && data.length > 0) {
-          const myArt = data.find(a => a.artist?.email === u.sub);
-          if (myArt) setUserName(myArt.artist.name[0].toUpperCase());
+        if (Array.isArray(data)) {
+          const mapped = data.slice(0, 5).map((a) => ({
+            id: a.id,
+            title: a.title,
+            artist: a.artist?.name || "Unknown Artist",
+            price: `NPR ${Number(a.price).toLocaleString()}`,
+            image: a.imageUrl
+              ? a.imageUrl
+              : "https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=300&q=80",
+          }));
+          setFeaturedWorks(mapped);
         }
+      })
+      .catch(() => {});
+
+    fetch("http://localhost:8080/api/exhibitions", {
+      headers: artworksHeaders,
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.length > 0) setExhibitionId(data[0].id);
       })
       .catch(() => {});
   }, []);
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
+  const goToExhibition = () => navigate(exhibitionId ? `/exhibition/${exhibitionId}` : "/home");
 
   const isArtist = role === "ARTIST";
   const isAdmin = role === "ADMIN";
 
+  const quickActionCls =
+    "bg-white border border-stone-200 rounded-xl p-4 flex flex-col items-center gap-2 hover:border-red-600 hover:shadow-md transition cursor-pointer";
+
   return (
-    <div className="min-h-screen bg-black text-white font-sans">
+    <div className="min-h-screen bg-cream text-stone-900">
 
-      {/* Top Navigation */}
-      <nav className="flex items-center justify-between px-6 py-4 bg-black border-b border-zinc-800 sticky top-0 z-50">
-        <button onClick={() => setMenuOpen(!menuOpen)} className="text-white text-xl">☰</button>
-        <span
-          className="text-2xl font-bold tracking-widest cursor-pointer"
-          style={{ fontFamily: "'Cormorant Garamond', serif" }}
-          onClick={() => navigate("/home")}
-        >
-          ArtVerse
-        </span>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate("/notification")}
-            className="relative text-zinc-400 hover:text-white text-xl"
-          >
-            🔔
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-600 rounded-full text-white text-xs flex items-center justify-center">
-                {unreadCount}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => navigate(isAdmin ? "/superadmin" : isArtist ? "/dashboard" : "/profile")}
-            className="w-9 h-9 rounded-full bg-zinc-700 flex items-center justify-center text-sm font-bold hover:bg-zinc-600"
-          >
-            {userName}
-          </button>
-        </div>
-      </nav>
-
-      {/* Slide-in Menu */}
-      {menuOpen && (
-        <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)}>
-          <div
-            className="absolute top-0 left-0 h-full w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col py-6 px-4 overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-8">
-              <span className="text-xl font-bold" style={{ fontFamily: "'Cormorant Garamond', serif" }}>Menu</span>
-              <button onClick={() => setMenuOpen(false)} className="text-zinc-400 text-xl">✕</button>
-            </div>
-
-            {[
-              { label: "🏠  Home", path: "/home" },
-              { label: "🖼  Gallery", path: "/gallery" },
-              { label: "🎭  Exhibition", path: "/exhibition" },
-              { label: "💬  Messages", path: "/chat" },
-              { label: "🔔  Notifications", path: "/notification" },
-            ].map((item) => (
-              <button
-                key={item.path}
-                onClick={() => { navigate(item.path); setMenuOpen(false); }}
-                className="text-left text-zinc-300 hover:text-white py-3 border-b border-zinc-800 text-sm"
-              >
-                {item.label}
-              </button>
-            ))}
-
-            {isArtist && (
-              <>
-                <button
-                  onClick={() => { navigate("/upload"); setMenuOpen(false); }}
-                  className="text-left text-zinc-300 hover:text-white py-3 border-b border-zinc-800 text-sm"
-                >
-                  ➕  Upload Artwork
-                </button>
-                <button
-                  onClick={() => { navigate("/dashboard"); setMenuOpen(false); }}
-                  className="text-left text-zinc-300 hover:text-white py-3 border-b border-zinc-800 text-sm"
-                >
-                  📊  My Studio
-                </button>
-              </>
-            )}
-
-            {!isArtist && !isAdmin && (
-              <button
-                onClick={() => { navigate("/profile"); setMenuOpen(false); }}
-                className="text-left text-zinc-300 hover:text-white py-3 border-b border-zinc-800 text-sm"
-              >
-                👤  My Profile
-              </button>
-            )}
-
-            {isAdmin && (
-              <button
-                onClick={() => { navigate("/superadmin"); setMenuOpen(false); }}
-                className="text-left text-zinc-300 hover:text-white py-3 border-b border-zinc-800 text-sm"
-              >
-                ⚙️  Admin Panel
-              </button>
-            )}
-
-            {/* Logout always visible at bottom */}
-            <div className="mt-6 border-t border-zinc-700 pt-4">
-              <button
-                onClick={handleLogout}
-                className="text-left text-red-400 hover:text-red-300 text-sm w-full py-2"
-              >
-                🚪  Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Navbar active="home" />
 
       {/* Hero Section */}
       <div className="relative w-full h-72 md:h-96 overflow-hidden">
         <img
           src="https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1200&q=80"
           alt="Hero"
-          className="w-full h-full object-cover opacity-70"
+          className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-stone-950/30 to-transparent" />
         <div className="absolute bottom-0 left-0 p-6 md:p-10">
-          <div className="bg-red-600 text-white text-xs font-bold px-3 py-1 inline-block mb-3 tracking-widest uppercase">
+          <div className="bg-red-600 text-white text-xs font-bold px-3 py-1 inline-block mb-3 tracking-widest uppercase rounded">
             Nepal's First Virtual Art Gallery
           </div>
-          <h1
-            className="text-3xl md:text-5xl font-bold text-white leading-tight mb-4"
-            style={{ fontFamily: "'Cormorant Garamond', serif" }}
-          >
+          <h1 className="text-3xl md:text-5xl font-black text-white leading-tight mb-4">
             The Sacred Curator
           </h1>
-          <button
-            onClick={() => navigate("/gallery")}
-            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold px-5 py-2 rounded transition"
-          >
-            Explore Art →
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => navigate("/gallery")}
+              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold px-5 py-2 rounded transition cursor-pointer border-none"
+            >
+              Explore Art →
+            </button>
+            {isGuest && (
+              <button
+                onClick={() => navigate("/register")}
+                className="flex items-center gap-2 border border-white text-white text-sm font-semibold px-5 py-2 rounded hover:bg-white hover:text-stone-900 transition cursor-pointer bg-transparent"
+              >
+                Join ArtVerse
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Featured Works */}
-      <div className="px-6 py-8">
+      <div className="px-6 py-8 max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <p className="text-red-500 text-xs font-bold tracking-widest uppercase mb-1">Curated Selection</p>
-            <h2 className="text-xl font-bold" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-              Featured Works
-            </h2>
+            <p className="text-red-600 text-xs font-bold tracking-widest uppercase mb-1">Curated Selection</p>
+            <h2 className="text-xl font-bold text-stone-900">Featured Works</h2>
           </div>
           <button
             onClick={() => navigate("/gallery")}
-            className="text-xs text-zinc-400 hover:text-white uppercase tracking-widest"
+            className="text-xs text-stone-500 hover:text-red-600 uppercase tracking-widest bg-transparent border-none cursor-pointer transition-colors"
           >
             View All
           </button>
         </div>
 
-        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-          {featuredWorks.map((work) => (
-            <div
-              key={work.id}
-              onClick={() => navigate(`/artwork/${work.id}`)}
-              className="flex-shrink-0 w-32 md:w-40 cursor-pointer group"
-            >
-              <div className="w-32 h-32 md:w-40 md:h-40 rounded overflow-hidden bg-zinc-800">
-                <img
-                  src={work.image}
-                  alt={work.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
+        {featuredWorks.length === 0 ? (
+          <p className="text-stone-400 text-sm">No artworks to show yet.</p>
+        ) : (
+          <div className="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
+            {featuredWorks.map((work) => (
+              <div
+                key={work.id}
+                onClick={() => navigate(`/artwork/${work.id}`)}
+                className="flex-shrink-0 w-32 md:w-40 cursor-pointer group"
+              >
+                <div className="w-32 h-32 md:w-40 md:h-40 rounded-lg overflow-hidden bg-stone-200 border border-stone-200 shadow-sm">
+                  <img
+                    src={work.image}
+                    alt={work.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+                <p className="text-xs font-semibold mt-2 truncate text-stone-900">{work.title}</p>
+                <p className="text-xs text-stone-500 truncate">{work.artist}</p>
+                <p className="text-xs text-red-600 font-bold">{work.price}</p>
               </div>
-              <p className="text-xs font-semibold mt-2 truncate">{work.title}</p>
-              <p className="text-xs text-zinc-400 truncate">{work.artist}</p>
-              <p className="text-xs text-red-500 font-bold">{work.price}</p>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Quick Actions for Artist */}
-      {isArtist && (
-        <div className="px-6 mb-8">
-          <p className="text-red-500 text-xs font-bold tracking-widest uppercase mb-3">Artist Tools</p>
+      {!isGuest && isArtist && (
+        <div className="px-6 mb-8 max-w-7xl mx-auto">
+          <p className="text-red-600 text-xs font-bold tracking-widest uppercase mb-3">Artist Tools</p>
           <div className="grid grid-cols-4 gap-3">
             {[
-              { label: "Upload", icon: "➕", path: "/upload" },
-              { label: "My Studio", icon: "📊", path: "/dashboard" },
-              { label: "Messages", icon: "💬", path: "/chat" },
-              { label: "Exhibition", icon: "🎭", path: "/exhibition" },
+              { label: "Upload", icon: "➕", action: () => navigate("/upload") },
+              { label: "My Studio", icon: "📊", action: () => navigate("/dashboard") },
+              { label: "Messages", icon: "💬", action: () => navigate("/chat") },
+              { label: "Exhibition", icon: "🎭", action: goToExhibition },
             ].map((item) => (
-              <button
-                key={item.path}
-                onClick={() => navigate(item.path)}
-                className="bg-zinc-900 border border-zinc-700 rounded-xl p-4 flex flex-col items-center gap-2 hover:border-zinc-500 transition"
-              >
+              <button key={item.label} onClick={item.action} className={quickActionCls}>
                 <span className="text-2xl">{item.icon}</span>
-                <span className="text-xs text-zinc-400">{item.label}</span>
+                <span className="text-xs text-stone-600">{item.label}</span>
               </button>
             ))}
           </div>
@@ -264,23 +166,38 @@ export default function Home() {
       )}
 
       {/* Quick Actions for Buyer */}
-      {!isArtist && !isAdmin && (
-        <div className="px-6 mb-8">
-          <p className="text-red-500 text-xs font-bold tracking-widest uppercase mb-3">Quick Actions</p>
+      {!isGuest && !isArtist && !isAdmin && (
+        <div className="px-6 mb-8 max-w-7xl mx-auto">
+          <p className="text-red-600 text-xs font-bold tracking-widest uppercase mb-3">Quick Actions</p>
           <div className="grid grid-cols-4 gap-3">
             {[
-              { label: "Gallery", icon: "🖼", path: "/gallery" },
-              { label: "My Orders", icon: "🛍", path: "/profile" },
-              { label: "Messages", icon: "💬", path: "/chat" },
-              { label: "Exhibition", icon: "🎭", path: "/exhibition" },
+              { label: "Gallery", icon: "🖼", action: () => navigate("/gallery") },
+              { label: "My Orders", icon: "🛍", action: () => navigate("/profile") },
+              { label: "Messages", icon: "💬", action: () => navigate("/chat") },
+              { label: "Exhibition", icon: "🎭", action: goToExhibition },
             ].map((item) => (
-              <button
-                key={item.path}
-                onClick={() => navigate(item.path)}
-                className="bg-zinc-900 border border-zinc-700 rounded-xl p-4 flex flex-col items-center gap-2 hover:border-zinc-500 transition"
-              >
+              <button key={item.label} onClick={item.action} className={quickActionCls}>
                 <span className="text-2xl">{item.icon}</span>
-                <span className="text-xs text-zinc-400">{item.label}</span>
+                <span className="text-xs text-stone-600">{item.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Quick Actions for Guest */}
+      {isGuest && (
+        <div className="px-6 mb-8 max-w-7xl mx-auto">
+          <p className="text-red-600 text-xs font-bold tracking-widest uppercase mb-3">Explore ArtVerse</p>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: "Gallery", icon: "🖼", action: () => navigate("/gallery") },
+              { label: "Exhibition", icon: "🎭", action: goToExhibition },
+              { label: "Login", icon: "🔑", action: () => navigate("/login") },
+            ].map((item) => (
+              <button key={item.label} onClick={item.action} className={quickActionCls}>
+                <span className="text-2xl">{item.icon}</span>
+                <span className="text-xs text-stone-600">{item.label}</span>
               </button>
             ))}
           </div>
@@ -288,67 +205,31 @@ export default function Home() {
       )}
 
       {/* Exhibition Banner */}
-      <div className="mx-6 mb-8 bg-zinc-900 border border-zinc-700 rounded-xl p-8 text-center">
-        <p className="text-xs text-zinc-500 uppercase tracking-widest mb-2">Limited Time</p>
-        <h2
-          className="text-2xl md:text-3xl font-bold mb-3"
-          style={{ fontFamily: "'Cormorant Garamond', serif" }}
-        >
+      <div className="mx-6 mb-8 max-w-7xl lg:mx-auto bg-white border border-stone-200 rounded-xl p-8 text-center shadow-sm">
+        <p className="text-xs text-red-600 font-bold uppercase tracking-widest mb-2">Limited Time</p>
+        <h2 className="text-2xl md:text-3xl font-black mb-3 text-stone-900">
           Sacred Geometry:<br />The 2024 Collection
         </h2>
-        <p className="text-zinc-400 text-sm mb-6 max-w-sm mx-auto">
+        <p className="text-stone-500 text-sm mb-6 max-w-sm mx-auto">
           Dive into the deep spiritual connection between ancient Buddhist mathematics and contemporary digital art forms.
         </p>
         <button
-          onClick={() => navigate("/exhibition")}
-          className="border border-white text-white text-xs font-bold px-6 py-2 rounded hover:bg-white hover:text-black transition tracking-widest uppercase"
+          onClick={goToExhibition}
+          className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-6 py-2.5 rounded transition tracking-widest uppercase cursor-pointer border-none"
         >
           Reserve Your Access
         </button>
       </div>
 
       {/* Quote */}
-      <div className="px-6 mb-8">
-        <blockquote
-          className="text-lg md:text-xl italic text-zinc-300 border-l-2 border-red-500 pl-5"
-          style={{ fontFamily: "'Cormorant Garamond', serif" }}
-        >
+      <div className="px-6 mb-8 max-w-7xl mx-auto">
+        <blockquote className="text-lg md:text-xl italic text-stone-700 border-l-2 border-red-600 pl-5">
           "Art is not what you see, but what you make others see through the lens of history."
         </blockquote>
-        <p className="text-xs text-zinc-500 mt-2 pl-5">— Chief Curator, ArtVerse</p>
+        <p className="text-xs text-stone-400 mt-2 pl-5">— Chief Curator, ArtVerse</p>
       </div>
 
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-black border-t border-zinc-800 flex justify-around items-center py-3 z-50">
-        <button onClick={() => navigate("/home")} className="flex flex-col items-center gap-1 text-white">
-          <span className="text-lg">🏠</span>
-          <span className="text-xs">Home</span>
-        </button>
-        <button onClick={() => navigate("/gallery")} className="flex flex-col items-center gap-1 text-zinc-500 hover:text-white">
-          <span className="text-lg">🖼</span>
-          <span className="text-xs">Gallery</span>
-        </button>
-        <button onClick={() => navigate("/chat")} className="flex flex-col items-center gap-1 text-zinc-500 hover:text-white">
-          <span className="text-lg">💬</span>
-          <span className="text-xs">Chat</span>
-        </button>
-        <button onClick={() => navigate("/notification")} className="relative flex flex-col items-center gap-1 text-zinc-500 hover:text-white">
-          <span className="text-lg">🔔</span>
-          {unreadCount > 0 && (
-            <span className="absolute -top-1 right-1 w-3 h-3 bg-red-600 rounded-full" />
-          )}
-          <span className="text-xs">Alerts</span>
-        </button>
-        <button
-          onClick={() => navigate(isAdmin ? "/superadmin" : isArtist ? "/dashboard" : "/profile")}
-          className="flex flex-col items-center gap-1 text-zinc-500 hover:text-white"
-        >
-          <span className="text-lg">👤</span>
-          <span className="text-xs">{isAdmin ? "Admin" : isArtist ? "Studio" : "Profile"}</span>
-        </button>
-      </nav>
-
-      <div className="h-20" />
+      <Footer />
     </div>
   );
 }
