@@ -107,4 +107,32 @@ public class ArtworkController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateArtwork(
+            @PathVariable Long id,
+            @RequestParam(value = "title", required = false) String title,
+            @RequestParam(value = "description", required = false) String description,
+            @RequestParam(value = "medium", required = false) String medium,
+            @RequestParam(value = "dimensions", required = false) String dimensions,
+            @RequestParam(value = "price", required = false) Double price,
+            @RequestParam(value = "isForSale", defaultValue = "false") boolean isForSale,
+            @RequestParam(value = "category", required = false) String category,
+            Authentication authentication) {
+        try {
+            String artistEmail = authentication.getName();
+            ArtworkUploadRequest request = new ArtworkUploadRequest();
+            request.setTitle(title);
+            request.setDescription(description);
+            request.setMedium(medium);
+            request.setDimensions(dimensions);
+            request.setPrice(price);
+            request.setForSale(isForSale);
+            request.setCategory(category);
+            Artwork updated = artworkService.updateArtwork(id, artistEmail, request);
+            return ResponseEntity.ok(updated);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

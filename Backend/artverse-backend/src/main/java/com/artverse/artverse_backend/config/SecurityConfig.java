@@ -42,6 +42,23 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/*.jpeg", "/*.jpg", "/*.png", "/*.webp", "/*.gif").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
+
+                        // ── "my"/protected sub-paths listed BEFORE the public wildcard ──
+                        .requestMatchers(HttpMethod.GET, "/api/exhibitions/my").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/artworks/my").authenticated()
+
+                        // ── Only artists may upload or edit artworks ──
+                        .requestMatchers(HttpMethod.POST, "/api/artworks/upload").hasRole("ARTIST")
+                        .requestMatchers(HttpMethod.PUT, "/api/artworks/**").hasRole("ARTIST")
+                        .requestMatchers(HttpMethod.DELETE, "/api/artworks/**").hasRole("ARTIST")
+
+                        // ── Public browsing: viewing is open ──
+                        .requestMatchers(HttpMethod.GET, "/api/artworks/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/exhibitions/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/likes/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/comments/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/follows/**").permitAll()
+
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )

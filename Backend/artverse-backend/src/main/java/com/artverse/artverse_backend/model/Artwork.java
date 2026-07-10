@@ -39,6 +39,9 @@ public class Artwork {
     @Column(name = "is_for_sale")
     private boolean isForSale;
 
+    @Column(name = "view_count")
+    private Long viewCount = 0L;
+
     @Column(nullable = false, updatable = false, name = "created_at")
     private LocalDateTime createdAt;
 
@@ -77,6 +80,9 @@ public class Artwork {
 
     public boolean isForSale() { return isForSale; }
     public void setForSale(boolean forSale) { isForSale = forSale; }
+
+    public Long getViewCount() { return viewCount; }
+    public void setViewCount(Long viewCount) { this.viewCount = viewCount; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
 }
