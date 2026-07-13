@@ -1,6 +1,42 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import Avatar from "../components/Avatar";
+
+// How often the dashboard silently re-fetches live platform data.
+const POLL_INTERVAL_MS = 15000;
+
+// Buckets artworks + orders into the last 6 calendar months, for the
+// Platform Growth chart — computed from real timestamps, not fixtures.
+function computeMonthlyChart(artworks, orders) {
+  const now = new Date();
+  const buckets = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    buckets.push({
+      key: `${d.getFullYear()}-${d.getMonth()}`,
+      label: d.toLocaleString("en-US", { month: "short" }).toUpperCase(),
+      uploads: 0,
+      sales: 0,
+    });
+  }
+  const byKey = Object.fromEntries(buckets.map((b) => [b.key, b]));
+
+  artworks.forEach((a) => {
+    if (!a.createdAt) return;
+    const d = new Date(a.createdAt);
+    const bucket = byKey[`${d.getFullYear()}-${d.getMonth()}`];
+    if (bucket) bucket.uploads += 1;
+  });
+  orders.forEach((o) => {
+    if (!o.createdAt) return;
+    const d = new Date(o.createdAt);
+    const bucket = byKey[`${d.getFullYear()}-${d.getMonth()}`];
+    if (bucket) bucket.sales += 1;
+  });
+
+  return buckets;
+}
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -12,49 +48,72 @@ export default function AdminDashboard() {
     totalListed: 0,
   });
   const [artworks, setArtworks] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [now, setNow] = useState(() => Date.now()); // ticks each second so "Xs ago" stays fresh, without calling Date.now() during render
 
   const token = localStorage.getItem("token");
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!token) { navigate("/login"); return; }
-      try {
-        const artRes = await fetch("http://localhost:8080/api/artworks", {
+  // `silent` skips the loading spinner — used for background polling so the
+  // dashboard doesn't flicker every 15s, only on the very first load.
+  const fetchData = useCallback(async (silent = false) => {
+    if (!token) { navigate("/login"); return; }
+    if (!silent) setLoading(true);
+    try {
+      const [artRes, orderRes] = await Promise.all([
+        fetch("http://localhost:8080/api/artworks", {
           headers: { Authorization: `Bearer ${token}` },
-        });
-        if (artRes.status === 401 || artRes.status === 403) {
-          localStorage.removeItem("token");
-          navigate("/login");
-          return;
-        }
-        const artData = await artRes.json();
-        setArtworks(artData);
-
-        const totalListed = artData
-          .filter((a) => a.forSale && a.price)
-          .reduce((sum, a) => sum + Number(a.price), 0);
-
-        const userMap = {};
-        artData.forEach((a) => {
-          if (a.artist?.id) userMap[a.artist.id] = a.artist;
-        });
-        const uniqueUsers = Object.values(userMap);
-        setUsers(uniqueUsers);
-
-        setStats({
-          totalArtworks: artData.length,
-          totalUsers: uniqueUsers.length,
-          totalListed,
-        });
-      } catch (err) {
-        console.error("Admin fetch failed:", err);
-      } finally {
-        setLoading(false);
+        }),
+        fetch("http://localhost:8080/api/admin/orders", {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+      if (artRes.status === 401 || artRes.status === 403) {
+        localStorage.removeItem("token");
+        navigate("/login");
+        return;
       }
-    };
-    fetchData();
+      const artData = await artRes.json();
+      const orderData = orderRes.ok ? await orderRes.json() : [];
+      setArtworks(artData);
+      setOrders(orderData);
+
+      const totalListed = artData
+        .filter((a) => a.forSale && a.price)
+        .reduce((sum, a) => sum + Number(a.price), 0);
+
+      const userMap = {};
+      artData.forEach((a) => {
+        if (a.artist?.id) userMap[a.artist.id] = a.artist;
+      });
+      const uniqueUsers = Object.values(userMap);
+      setUsers(uniqueUsers);
+
+      setStats({
+        totalArtworks: artData.length,
+        totalUsers: uniqueUsers.length,
+        totalListed,
+      });
+      setLastUpdated(new Date());
+    } catch (err) {
+      console.error("Admin fetch failed:", err);
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  }, [token, navigate]);
+
+  useEffect(() => {
+    fetchData(false);
+    const poll = setInterval(() => fetchData(true), POLL_INTERVAL_MS);
+    return () => clearInterval(poll);
+  }, [fetchData]);
+
+  // Just re-renders once a second so the "Updated Xs ago" label ticks — no network calls.
+  useEffect(() => {
+    const clock = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(clock);
   }, []);
 
   const formatTime = (dateStr) => {
@@ -73,10 +132,12 @@ export default function AdminDashboard() {
     return `http://localhost:8080${url}`;
   };
 
-  const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN"];
-  const barData = [30, 45, 35, 60, 50, 80];
-  const commData = [10, 15, 12, 20, 18, 30];
-  const maxBar = Math.max(...barData);
+  const chartData = computeMonthlyChart(artworks, orders);
+  const maxBar = Math.max(1, ...chartData.map((b) => Math.max(b.uploads, b.sales)));
+
+  const secondsAgo = lastUpdated ? Math.floor((now - lastUpdated.getTime()) / 1000) : null;
+  const liveLabel =
+    secondsAgo === null ? "" : secondsAgo < 2 ? "Updated just now" : `Updated ${secondsAgo}s ago`;
 
   return (
     <div className="min-h-screen pb-10 bg-cream text-[#1c1917]">
@@ -111,12 +172,20 @@ export default function AdminDashboard() {
 
         {/* Alert Banner */}
         <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-6">
-          <span className="w-2 h-2 rounded-full bg-red-400 flex-shrink-0" />
+          <span className="relative flex-shrink-0 w-2 h-2">
+            <span className="absolute inset-0 rounded-full bg-red-500 animate-ping opacity-75" />
+            <span className="relative block w-2 h-2 rounded-full bg-red-500" />
+          </span>
           <span className="flex-1 text-[13px] text-[#1c1917]">
             {loading
               ? "Loading platform data…"
               : `${artworks.length} artworks on platform · ${users.length} registered artists`}
           </span>
+          {!loading && liveLabel && (
+            <span className="text-[10px] font-bold tracking-widest text-red-500 uppercase whitespace-nowrap">
+              🔴 LIVE · {liveLabel}
+            </span>
+          )}
           <button
             onClick={() => navigate("/gallery")}
             className="text-[11px] font-bold tracking-widest text-[#dc2626] hover:text-[#b91c1c] transition-colors cursor-pointer bg-transparent border-none"
@@ -247,9 +316,14 @@ export default function AdminDashboard() {
                   key={user.id}
                   className="flex items-center gap-3 py-3 border-b border-gray-50 last:border-b-0"
                 >
-                  <div className="w-10 h-10 rounded-full bg-[#1c1917] text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
-                    {(user.name || user.email || "?")[0].toUpperCase()}
-                  </div>
+                  <Avatar
+                    name={user.name}
+                    email={user.email}
+                    photo={user.profilePhoto}
+                    size={40}
+                    className="text-sm"
+                    bgColor="#1c1917"
+                  />
                   <div className="flex-1 min-w-0">
                     <p className="text-[13px] font-semibold text-[#1c1917] truncate">
                       {user.name || user.email}
@@ -270,7 +344,7 @@ export default function AdminDashboard() {
           <div className="flex items-start justify-between mb-6">
             <div>
               <h2 className="text-[15px] font-semibold text-[#1c1917]">Platform Growth</h2>
-              <p className="text-[12px] text-gray-400 mt-1">Artwork uploads over the current period.</p>
+              <p className="text-[12px] text-gray-400 mt-1">Uploads and sales over the last 6 months.</p>
             </div>
             <div className="flex items-center gap-3 text-[10px] font-bold tracking-widest text-gray-400">
               <span className="flex items-center gap-1.5">
@@ -284,23 +358,33 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="flex items-end gap-2 h-44 pb-6 border-b border-gray-100">
-            {months.map((month, i) => (
-              <div key={month} className="flex-1 flex flex-col items-center gap-1 h-full">
-                <div className="flex-1 w-full flex items-end gap-0.5">
-                  <div
-                    className="flex-1 rounded-t-sm bg-[#1c1917] opacity-80 transition-all duration-300 min-h-1"
-                    style={{ height: `${(barData[i] / maxBar) * 100}%` }}
-                  />
-                  <div
-                    className="flex-1 rounded-t-sm bg-[#dc2626] opacity-70 transition-all duration-300 min-h-1"
-                    style={{ height: `${(commData[i] / maxBar) * 100}%` }}
-                  />
+          {loading ? (
+            <div className="h-44 flex items-center justify-center text-[13px] text-gray-300">Loading chart…</div>
+          ) : chartData.every((b) => b.uploads === 0 && b.sales === 0) ? (
+            <div className="h-44 flex items-center justify-center text-[13px] text-gray-300">
+              No activity in the last 6 months yet.
+            </div>
+          ) : (
+            <div className="flex items-end gap-2 h-44 pb-6 border-b border-gray-100">
+              {chartData.map((b) => (
+                <div key={b.key} className="flex-1 flex flex-col items-center gap-1 h-full">
+                  <div className="flex-1 w-full flex items-end gap-0.5">
+                    <div
+                      title={`${b.uploads} upload${b.uploads === 1 ? "" : "s"}`}
+                      className="flex-1 rounded-t-sm bg-[#1c1917] opacity-80 transition-all duration-300 min-h-1"
+                      style={{ height: `${(b.uploads / maxBar) * 100}%` }}
+                    />
+                    <div
+                      title={`${b.sales} sale${b.sales === 1 ? "" : "s"}`}
+                      className="flex-1 rounded-t-sm bg-[#dc2626] opacity-70 transition-all duration-300 min-h-1"
+                      style={{ height: `${(b.sales / maxBar) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-[9px] font-bold tracking-widest text-gray-300">{b.label}</span>
                 </div>
-                <span className="text-[9px] font-bold tracking-widest text-gray-300">{month}</span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
       </main>

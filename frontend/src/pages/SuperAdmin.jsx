@@ -37,7 +37,7 @@ export default function SuperAdmin() {
   const [loading, setLoading]         = useState(true);
   const [viewingId, setViewingId]     = useState(null);
   const [editingUser, setEditingUser] = useState(null);
-  const [editForm, setEditForm]       = useState({ name: "", email: "", bio: "" });
+  const [editForm, setEditForm]       = useState({ name: "", email: "", bio: "", password: "" });
 
   const token   = getToken();
   const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
@@ -83,13 +83,16 @@ export default function SuperAdmin() {
 
   function openEdit(user) {
     setEditingUser(user);
-    setEditForm({ name: user.name || "", email: user.email || "", bio: user.bio || "" });
+    setEditForm({ name: user.name || "", email: user.email || "", bio: user.bio || "", password: "" });
   }
 
   async function saveEdit() {
     const res = await fetch(`${API}/api/admin/users/${editingUser.id}`, { method: "PUT", headers, body: JSON.stringify(editForm) });
     if (res.ok) {
-      setUsers(p => p.map(u => u.id === editingUser.id ? { ...u, ...editForm } : u));
+      // Don't keep the plaintext password around in local state — only
+      // merge the non-sensitive fields back into the table.
+      const { password, ...rest } = editForm;
+      setUsers(p => p.map(u => u.id === editingUser.id ? { ...u, ...rest } : u));
       setEditingUser(null);
     }
   }
@@ -210,12 +213,21 @@ export default function SuperAdmin() {
                     />
                   </div>
                 ))}
-                <div style={{ marginBottom: 24 }}>
+                <div style={{ marginBottom: 16 }}>
                   <label style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: C.textLight, display: "block", marginBottom: 6 }}>Bio</label>
                   <textarea value={editForm.bio} onChange={e => setEditForm({ ...editForm, bio: e.target.value })} rows={3} placeholder="User bio..."
                     style={{ width: "100%", padding: "10px 14px", border: `1.5px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "'Roboto', sans-serif", color: C.text, outline: "none", resize: "vertical", boxSizing: "border-box" }}
                     onFocus={e => e.target.style.borderColor = C.accent} onBlur={e => e.target.style.borderColor = C.border}
                   />
+                </div>
+                <div style={{ marginBottom: 24 }}>
+                  <label style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: C.textLight, display: "block", marginBottom: 6 }}>Reset Password</label>
+                  <input type="password" value={editForm.password} onChange={e => setEditForm({ ...editForm, password: e.target.value })}
+                    placeholder="Leave blank to keep current password"
+                    style={{ width: "100%", padding: "10px 14px", border: `1.5px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "'Roboto', sans-serif", color: C.text, outline: "none", boxSizing: "border-box" }}
+                    onFocus={e => e.target.style.borderColor = C.accent} onBlur={e => e.target.style.borderColor = C.border}
+                  />
+                  <p style={{ fontSize: 11, color: C.textLight, margin: "6px 0 0" }}>At least 6 characters if set.</p>
                 </div>
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
                   <Btn onClick={() => setEditingUser(null)} variant="ghost">Cancel</Btn>

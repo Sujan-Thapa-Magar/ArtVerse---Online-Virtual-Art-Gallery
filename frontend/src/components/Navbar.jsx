@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import EditProfileModal from "./EditProfileModal";
+import Avatar from "./Avatar";
 
 const API = "http://localhost:8080";
 
@@ -24,6 +26,8 @@ export default function Navbar({ active = "" }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [exhibitionId, setExhibitionId] = useState(null);
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
+  const [me, setMe] = useState(null);
 
   const token = localStorage.getItem("token");
   const user = getCurrentUser();
@@ -31,7 +35,6 @@ export default function Navbar({ active = "" }) {
   const role = user?.role || "BUYER";
   const isArtist = role === "ARTIST";
   const isAdmin = role === "ADMIN";
-  const initial = (user?.name || user?.sub || "A")[0].toUpperCase();
 
   useEffect(() => {
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
@@ -39,6 +42,13 @@ export default function Navbar({ active = "" }) {
       fetch(`${API}/api/notifications/unread-count`, { headers })
         .then((r) => r.json())
         .then((d) => setUnreadCount(d.unreadCount || 0))
+        .catch(() => {});
+
+      // Real name + profile photo aren't in the JWT (it only carries email
+      // + role), so fetch them for the avatar.
+      fetch(`${API}/api/users/me`, { headers })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => d && setMe(d))
         .catch(() => {});
     }
     fetch(`${API}/api/exhibitions`, { headers })
@@ -154,10 +164,8 @@ export default function Navbar({ active = "" }) {
               </button>
             ) : (
               <div className="relative group">
-                <button
-                  className="w-9 h-9 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center text-sm font-bold cursor-pointer border-none transition-colors"
-                >
-                  {initial}
+                <button className="block rounded-full cursor-pointer border-none bg-transparent p-0 overflow-hidden hover:opacity-90 transition-opacity">
+                  <Avatar name={me?.name} email={user?.sub} photo={me?.profilePhoto} size={36} />
                 </button>
 
                 {/* Invisible bridge so the dropdown doesn't disappear on the gap between button and menu */}
@@ -169,6 +177,12 @@ export default function Navbar({ active = "" }) {
                     className="w-full text-left px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50 hover:text-red-600 bg-transparent border-none cursor-pointer transition-colors"
                   >
                     {isArtist ? "My Studio" : isAdmin ? "Admin Panel" : "My Profile"}
+                  </button>
+                  <button
+                    onClick={() => setEditProfileOpen(true)}
+                    className="w-full text-left px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50 hover:text-red-600 bg-transparent border-none cursor-pointer transition-colors"
+                  >
+                    ✏️ Edit Profile
                   </button>
                   <button
                     onClick={handleLogout}
@@ -250,17 +264,30 @@ export default function Navbar({ active = "" }) {
                   </button>
                 </>
               ) : (
-                <button
-                  onClick={handleLogout}
-                  className="text-left text-red-600 hover:text-red-700 text-sm w-full py-2 bg-transparent border-none cursor-pointer"
-                >
-                  🚪  Logout
-                </button>
+                <>
+                  <button
+                    onClick={() => {
+                      setEditProfileOpen(true);
+                      setMenuOpen(false);
+                    }}
+                    className="text-left text-stone-600 hover:text-red-600 text-sm w-full py-2 bg-transparent border-none cursor-pointer"
+                  >
+                    ✏️  Edit Profile
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="text-left text-red-600 hover:text-red-700 text-sm w-full py-2 bg-transparent border-none cursor-pointer"
+                  >
+                    🚪  Logout
+                  </button>
+                </>
               )}
             </div>
           </div>
         </div>
       )}
+
+      {editProfileOpen && <EditProfileModal onClose={() => setEditProfileOpen(false)} />}
     </>
   );
 }

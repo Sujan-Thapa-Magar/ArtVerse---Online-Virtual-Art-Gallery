@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import Avatar from "../components/Avatar";
 
 export default function ArtworkDetail() {
   const navigate = useNavigate();
@@ -606,9 +607,13 @@ export default function ArtworkDetail() {
             {/* Artist Row */}
             <div className="flex items-center justify-between bg-white border border-[#e7e5e4] rounded-xl px-4 py-3 mb-4">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-full bg-[#1c1917] text-white flex items-center justify-center text-base font-bold flex-shrink-0">
-                  {artistName[0].toUpperCase()}
-                </div>
+                <Avatar
+                  name={artistName}
+                  photo={artwork.artist?.profilePhoto}
+                  size={44}
+                  className="text-base"
+                  bgColor="#1c1917"
+                />
                 <div>
                   <p className="text-[13px] font-bold text-[#1c1917] mb-0.5">{artistName}</p>
                   <p className="text-[11px] text-[#78716c]">Verified Artist</p>
@@ -717,9 +722,15 @@ export default function ArtworkDetail() {
             <div className="space-y-4">
               {comments.map((c) => (
                 <div key={c.id} className="flex gap-3">
-                  <div className="w-8 h-8 rounded-full bg-[#f5f5f4] text-[#78716c] flex items-center justify-center text-xs font-bold flex-shrink-0">
-                    {(c.user?.name || c.user?.email || "?")[0].toUpperCase()}
-                  </div>
+                  <Avatar
+                    name={c.user?.name}
+                    email={c.user?.email}
+                    photo={c.user?.profilePhoto}
+                    size={32}
+                    className="text-xs"
+                    bgColor="#f5f5f4"
+                    textColor="#78716c"
+                  />
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-[13px] font-bold text-[#1c1917]">{c.user?.name || c.user?.email || "Anonymous"}</span>

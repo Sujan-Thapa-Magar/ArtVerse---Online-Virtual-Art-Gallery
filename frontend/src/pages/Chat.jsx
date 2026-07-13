@@ -45,6 +45,41 @@ const C = {
   activeItem:  "#fef2f2",   // soft red item highlight background
 };
 
+// Avatar circle matching the app's brand gradient — shows the user's photo
+// when they have one, falling back to their initial. Declared at module
+// scope (not inside Chat()) so its identity — and imgError state — stays
+// stable across re-renders, e.g. every 5s message poll.
+function Avatar({ name, photo, size = 42 }) {
+  const [imgError, setImgError] = useState(false);
+  const src = photo ? (photo.startsWith("http") ? photo : `${API}/${photo}`) : null;
+
+  if (src && !imgError) {
+    return (
+      <img
+        src={src}
+        alt={name || "avatar"}
+        onError={() => setImgError(true)}
+        style={{
+          width: size, height: size, borderRadius: "50%", flexShrink: 0,
+          objectFit: "cover", boxShadow: "0 2px 8px rgba(220, 38, 38, 0.2)",
+        }}
+      />
+    );
+  }
+
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: "50%", flexShrink: 0,
+      background: `linear-gradient(135deg, ${C.accent} 0%, #ef4444 100%)`,
+      color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
+      fontWeight: 700, fontSize: size * 0.38, fontFamily: "'Roboto', sans-serif",
+      boxShadow: "0 2px 8px rgba(220, 38, 38, 0.2)",
+    }}>
+      {name?.[0]?.toUpperCase() || "?"}
+    </div>
+  );
+}
+
 export default function Chat() {
   const { userId } = useParams();
   const navigate = useNavigate();
@@ -135,19 +170,6 @@ export default function Chat() {
     navigate(`/chat/${user.id}`);
   }
 
-  // Avatar circle matching your profile navbar brand gradient
-  const Avatar = ({ name, size = 42 }) => (
-    <div style={{
-      width: size, height: size, borderRadius: "50%", flexShrink: 0,
-      background: `linear-gradient(135deg, ${C.accent} 0%, #ef4444 100%)`,
-      color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
-      fontWeight: 700, fontSize: size * 0.38, fontFamily: "'Roboto', sans-serif",
-      boxShadow: "0 2px 8px rgba(220, 38, 38, 0.2)",
-    }}>
-      {name?.[0]?.toUpperCase() || "?"}
-    </div>
-  );
-
   return (
     <div style={{ background: C.pageBg, color: C.text }}>
       <Navbar />
@@ -194,7 +216,7 @@ export default function Chat() {
                   onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "#faf6f0"; }}
                   onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
                 >
-                  <Avatar name={partner.name} />
+                  <Avatar name={partner.name} photo={partner.profilePhoto} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: 14, fontWeight: 600, color: C.text, margin: "0 0 2px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {partner.name}
@@ -225,7 +247,7 @@ export default function Chat() {
           <>
             {/* Chat Header */}
             <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 20px", background: C.headerBg, borderBottom: `1px solid ${C.border}`, boxShadow: "0 1px 6px rgba(0,0,0,0.04)" }}>
-              <Avatar name={selectedUser.name} size={44} />
+              <Avatar name={selectedUser.name} photo={selectedUser.profilePhoto} size={44} />
               <div style={{ flex: 1 }}>
                 <p style={{ fontSize: 15, fontWeight: 700, color: C.text, margin: "0 0 2px" }}>{selectedUser.name}</p>
                 <p style={{ fontSize: 11, color: C.textLight, margin: 0, textTransform: "uppercase", letterSpacing: "0.5px" }}>
