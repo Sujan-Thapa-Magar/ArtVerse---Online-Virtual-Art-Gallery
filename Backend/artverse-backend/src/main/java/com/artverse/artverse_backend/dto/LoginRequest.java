@@ -1,6 +1,6 @@
 package com.artverse.artverse_backend.dto;
 
-import jakarta.validation.constraints.Email;
+import  jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 

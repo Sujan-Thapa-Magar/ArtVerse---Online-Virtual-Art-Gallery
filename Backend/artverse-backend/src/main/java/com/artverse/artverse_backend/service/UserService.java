@@ -19,6 +19,7 @@ public class UserService implements UserDetailsService {
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final GoogleAuthService googleAuthService;
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
@@ -48,6 +49,29 @@ public class UserService implements UserDetailsService {
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new RuntimeException("Invalid password");
         }
+        return jwtUtil.generateToken(user.getEmail(), user.getRole().name());
+    }
+
+    /**
+     * Verifies the Google ID token, then logs the matching user in (creating
+     * a new BUYER account on first sign-in), and returns our own JWT — same
+     * shape as loginUser — so the frontend's login flow doesn't need to branch.
+     */
+    public String loginWithGoogle(String idToken) {
+        GoogleAuthService.GoogleUser googleUser = googleAuthService.verify(idToken);
+
+        User user = userRepository.findByEmail(googleUser.email()).orElseGet(() -> {
+            User u = new User();
+            u.setName(googleUser.name());
+            u.setEmail(googleUser.email());
+            // Google-authenticated accounts never use a password, but the
+            // column is NOT NULL — store a random hash nobody can ever enter.
+            u.setPassword(passwordEncoder.encode(java.util.UUID.randomUUID().toString()));
+            u.setRole(User.Role.BUYER);
+            u.setIsVerified(false);
+            return userRepository.save(u);
+        });
+
         return jwtUtil.generateToken(user.getEmail(), user.getRole().name());
     }
 }

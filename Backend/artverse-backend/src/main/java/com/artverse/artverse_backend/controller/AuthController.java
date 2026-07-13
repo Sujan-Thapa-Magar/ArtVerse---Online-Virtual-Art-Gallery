@@ -1,9 +1,11 @@
 package com.artverse.artverse_backend.controller;
 
+import com.artverse.artverse_backend.dto.GoogleAuthRequest;
 import com.artverse.artverse_backend.dto.LoginRequest;
 import com.artverse.artverse_backend.dto.RegisterRequest;
 import com.artverse.artverse_backend.model.User;
 import com.artverse.artverse_backend.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,19 +26,10 @@ public class AuthController {
     private final String UPLOAD_DIR = "/media/sujan/BC6C5E616C5E168C/ArtVerse/Backend/artverse-backend/uploads/";
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(
-            @RequestParam("name") String name,
-            @RequestParam("email") String email,
-            @RequestParam("password") String password,
-            @RequestParam("role") String role,
-            @RequestParam(value = "idCard", required = false) MultipartFile idCard) {
+    public ResponseEntity<?> register(@Valid @ModelAttribute RegisterRequest request) {
 
         try {
-            RegisterRequest request = new RegisterRequest();
-            request.setName(name);
-            request.setEmail(email);
-            request.setPassword(password);
-            request.setRole(User.Role.valueOf(role.toUpperCase()));
+            MultipartFile idCard = request.getIdCard();
 
             // Save ID card if provided
             if (idCard != null && !idCard.isEmpty()) {
@@ -60,9 +53,22 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         try {
             String token = userService.loginUser(request);
+            return ResponseEntity.ok(token);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // "Sign in with Google" — frontend posts the ID token it got from Google
+    // Identity Services; we verify it server-side and return our own JWT,
+    // in the same plain-text shape as /login, so the client handles both identically.
+    @PostMapping("/google")
+    public ResponseEntity<?> googleLogin(@Valid @RequestBody GoogleAuthRequest request) {
+        try {
+            String token = userService.loginWithGoogle(request.getIdToken());
             return ResponseEntity.ok(token);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());

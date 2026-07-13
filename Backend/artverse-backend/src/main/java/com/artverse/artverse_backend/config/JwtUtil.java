@@ -15,8 +15,8 @@ public class JwtUtil {
     private static final String SECRET = "artverse_secret_key_must_be_at_least_32_characters_long_for_hs256";
     private final Key key = Keys.hmacShaKeyFor(SECRET.getBytes());
 
-    // 45 minutes
-    private final long EXPIRATION_TIME = 45L * 60 * 1000;
+    // 45 minute
+    private final long EXPIRATION_TIME = 25L  * 60 * 1000;
 
     public String generateToken(String email, String role) {
         return Jwts.builder()

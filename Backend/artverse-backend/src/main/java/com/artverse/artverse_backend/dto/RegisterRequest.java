@@ -3,8 +3,10 @@ package com.artverse.artverse_backend.dto;
 import com.artverse.artverse_backend.model.User;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import org.springframework.web.multipart.MultipartFile;
 
 @Data
 public class RegisterRequest {
@@ -20,8 +22,12 @@ public class RegisterRequest {
     @Size(min = 6, message = "Password must be at least 6 characters")
     private String password;
 
+    @NotNull(message = "Role is required")
     private User.Role role = User.Role.BUYER;
 
     private String idCardUrl;
 
+    // Bound directly from the multipart form — not persisted as-is,
+    // used only to read the uploaded file in the controller
+    private MultipartFile idCard;
 }

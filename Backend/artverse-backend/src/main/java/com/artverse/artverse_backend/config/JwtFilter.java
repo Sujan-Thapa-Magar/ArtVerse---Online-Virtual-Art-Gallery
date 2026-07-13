@@ -1,6 +1,7 @@
 package com.artverse.artverse_backend.config;
 
 import com.artverse.artverse_backend.service.UserService;
+import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -38,8 +39,15 @@ public class JwtFilter extends OncePerRequestFilter {
             token = authHeader.substring(7);
             try {
                 email = jwtUtil.extractEmail(token);
+            } catch (ExpiredJwtException e) {
+                // Token was valid but has expired — tell the frontend clearly
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.getWriter().write("{\"error\": \"TOKEN_EXPIRED\"}");
+                return; // stop here — don't continue the filter chain
             } catch (Exception e) {
-                // Invalid token — continue without auth
+                // Malformed / tampered token — treat as anonymous, let normal
+                // authorization rules (401/403) handle it downstream
             }
         }
 
