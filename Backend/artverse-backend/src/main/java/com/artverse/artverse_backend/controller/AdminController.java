@@ -6,6 +6,7 @@ import com.artverse.artverse_backend.repository.OrderRepository;
 import com.artverse.artverse_backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,6 +21,9 @@ public class AdminController {
 
     @Autowired
     private OrderRepository orderRepository;
+
+    @Autowired
+    private BCryptPasswordEncoder passwordEncoder;
 
     @GetMapping("/users")
     public ResponseEntity<List<User>> getAllUsers() {
@@ -49,6 +53,13 @@ public class AdminController {
         }
         if (body.containsKey("bio")) {
             user.setBio(body.get("bio"));
+        }
+        if (body.containsKey("password") && !body.get("password").isBlank()) {
+            String newPassword = body.get("password");
+            if (newPassword.length() < 6) {
+                return ResponseEntity.badRequest().body("Password must be at least 6 characters.");
+            }
+            user.setPassword(passwordEncoder.encode(newPassword));
         }
         userRepository.save(user);
         return ResponseEntity.ok(Map.of("message", "User updated successfully"));
