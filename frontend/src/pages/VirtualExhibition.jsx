@@ -147,7 +147,7 @@ export default function VirtualExhibition() {
   );
 
   return (
-    <div style={{ height: "calc(100vh - 60px)", overflow: "hidden", background: C.pageBg, display: "flex", flexDirection: "column", fontFamily: "'Roboto', sans-serif", color: C.text, position: "relative" }}>
+    <div style={{ height: "100vh", overflow: "hidden", background: C.pageBg, display: "flex", flexDirection: "column", fontFamily: "'Roboto', sans-serif", color: C.text, position: "relative" }}>
       <style>{`
         @keyframes fadeSlideIn  { from { opacity: 0; transform: translateX(32px); } to { opacity: 1; transform: translateX(0); } }
         @keyframes fadeSlideOut { from { opacity: 1; transform: translateX(0);    } to { opacity: 0; transform: translateX(-32px); } }

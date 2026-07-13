@@ -179,11 +179,8 @@ export default function SuperAdmin() {
       <div style={{ flex: 1, overflowY: "auto" }}>
 
         {/* Top bar */}
-        <div style={{ background: C.white, borderBottom: `1px solid ${C.border}`, padding: "0 32px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 64, zIndex: 40, boxShadow: "0 1px 6px rgba(0,0,0,0.04)" }}>
-          <div>
-            <span style={{ fontFamily: "'Roboto', sans-serif", fontSize: 18, fontWeight: 600, color: C.text }}>{activeTab}</span>
-            <span style={{ fontSize: 11, color: C.textLight, marginLeft: 10 }}>/ ArtVerse Admin</span>
-          </div>
+        {/* <div style={{ background: C.white, borderBottom: `1px solid ${C.border}`, padding: "0 32px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 64, zIndex: 40, boxShadow: "0 1px 6px rgba(0,0,0,0.04)" }}>
+       
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             {unverifiedArtists.length > 0 && (
               <span style={{ background: "#fef3c7", color: "#b45309", fontSize: 11, fontWeight: 600, padding: "5px 12px", borderRadius: 20, border: "1px solid #fde68a" }}>
@@ -192,7 +189,7 @@ export default function SuperAdmin() {
             )}
             <div style={{ width: 34, height: 34, borderRadius: "50%", background: `linear-gradient(135deg, ${C.accent}, #ef4444)`, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700 }}>A</div>
           </div>
-        </div>
+        </div> */}
 
         <div style={{ padding: "28px 32px", maxWidth: 1200 }}>
 

@@ -1,11 +1,23 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import { loadGoogleIdentityScript } from "../utils/loadGoogleIdentityScript";
+
+// Create your own OAuth 2.0 Client ID (Web application) at
+// https://console.cloud.google.com/apis/credentials, add http://localhost:5173
+// as an Authorized JavaScript origin, then paste it here AND into
+// google.client-id in Backend/artverse-backend/src/main/resources/application.properties.
+const GOOGLE_CLIENT_ID = "879111825472-tqj2cn0lsjc2gbk4gscdkqbfml5e2f7a.apps.googleusercontent.com";
+
+function decodeJwtPayload(token) {
+  try { return JSON.parse(atob(token.split(".")[1])); } catch { return null; }
+}
 
 export default function Register() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [activeTab, setActiveTab] = useState("register");
   const [formData, setFormData] = useState({
@@ -21,6 +33,16 @@ export default function Register() {
   const [photoPreview, setPhotoPreview] = useState(null);
   const [idPreview, setIdPreview] = useState(null);
   const [idFile, setIdFile] = useState(null);
+  const googleInitialized = useRef(false);
+
+  // If redirected here because the JWT expired, land on the login tab
+  // with a clear explanation instead of a silent, confusing redirect.
+  useEffect(() => {
+    if (searchParams.get("sessionExpired") === "true") {
+      setActiveTab("login");
+      setMessage("⏱️ Your session expired. Please log in again.");
+    }
+  }, [searchParams]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -115,10 +137,84 @@ export default function Register() {
     setLoading(false);
   };
 
+  // Fired by Google Identity Services once the user picks an account. We
+  // send the ID token to the backend for verification — never trust it
+  // client-side — and it hands back our own JWT, same shape as /login.
+  const handleGoogleCredential = async (response) => {
+    setMessage("");
+    setLoading(true);
+    try {
+      const res = await fetch("http://localhost:8080/api/auth/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken: response.credential }),
+      });
+      const text = await res.text();
+      if (res.ok) {
+        const payload = decodeJwtPayload(text);
+        login(text, { email: payload?.sub });
+
+        const raw = sessionStorage.getItem("pendingArtworkAction");
+        if (raw) {
+          try {
+            const pending = JSON.parse(raw);
+            if (pending?.artworkId) {
+              navigate(`/artwork/${pending.artworkId}`);
+              setLoading(false);
+              return;
+            }
+          } catch {
+            sessionStorage.removeItem("pendingArtworkAction");
+          }
+        }
+
+        navigate("/home");
+      } else {
+        setMessage("❌ " + text);
+      }
+    } catch {
+      setMessage("❌ Could not connect to server.");
+    }
+    setLoading(false);
+  };
+
+  // Renders Google's own Sign-In button into whichever tab is currently
+  // visible — its container unmounts/remounts on every tab switch, so the
+  // button has to be (re)drawn each time.
+  useEffect(() => {
+    let cancelled = false;
+    loadGoogleIdentityScript()
+      .then((google) => {
+        if (cancelled || !google) return;
+        if (!googleInitialized.current) {
+          google.accounts.id.initialize({
+            client_id: GOOGLE_CLIENT_ID,
+            callback: handleGoogleCredential,
+          });
+          googleInitialized.current = true;
+        }
+        const el = document.getElementById("google-signin-btn");
+        if (el) {
+          el.innerHTML = "";
+          google.accounts.id.renderButton(el, {
+            theme: "outline",
+            size: "large",
+            shape: "pill",
+            text: activeTab === "register" ? "signup_with" : "signin_with",
+            width: el.offsetWidth || 400,
+          });
+        }
+      })
+      .catch(() => {
+        // Google script failed to load (offline, blocked, etc.) — the rest
+        // of the form still works, so we just leave the button slot empty.
+      });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
+
   return (
     <div className="min-h-screen bg-cream">
-
-      <Navbar />
 
       {/* ── Floating card — centered ── */}
       <div className="flex items-center justify-center px-6 py-12">
@@ -128,9 +224,9 @@ export default function Register() {
         >
           <main className="px-10 py-10 md:px-12 md:py-12">
 
-            <a href="/" className="text-2xl font-black tracking-widest text-stone-900 no-underline block text-center mb-6">
-              Art<span className="text-red-600">Verse</span>
-            </a>
+            <a href="/" className="flex justify-center mb-6">
+            <img src="/logo-dark.png" alt="ArtVerse" className="h-36 sm:h-40 object-contain" />
+                </a>
 
             <h1 className="text-3xl font-bold text-center text-gray-900 mb-2">
               The Sacred Curator
@@ -300,18 +396,7 @@ export default function Register() {
 
                 <div className="text-center text-gray-300 text-xs mb-4">or</div>
 
-                <button
-                  type="button"
-                  className="w-full py-3.5 bg-white text-gray-700 border border-gray-200 rounded-md text-sm font-medium flex items-center justify-center gap-2.5 hover:bg-gray-50 transition-colors cursor-pointer"
-                >
-                  <svg width="18" height="18" viewBox="0 0 18 18">
-                    <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
-                    <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
-                    <path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/>
-                    <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/>
-                  </svg>
-                  Continue with Google
-                </button>
+                <div id="google-signin-btn" className="w-full flex justify-center" />
 
                 <p className="text-center text-xs text-gray-300 mt-6 leading-relaxed">
                   By joining ArtVerse, you agree to our{" "}
@@ -360,18 +445,7 @@ export default function Register() {
 
                 <div className="text-center text-gray-300 text-xs mb-4">or</div>
 
-                <button
-                  type="button"
-                  className="w-full py-3.5 bg-white text-gray-700 border border-gray-200 rounded-md text-sm font-medium flex items-center justify-center gap-2.5 hover:bg-gray-50 transition-colors cursor-pointer"
-                >
-                  <svg width="18" height="18" viewBox="0 0 18 18">
-                    <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
-                    <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
-                    <path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/>
-                    <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/>
-                  </svg>
-                  Continue with Google
-                </button>
+                <div id="google-signin-btn" className="w-full flex justify-center" />
 
                 <p className="text-center text-xs text-gray-400 mt-6">
                   Don't have an account?{" "}

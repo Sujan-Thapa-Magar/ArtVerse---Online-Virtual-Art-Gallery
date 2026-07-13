@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import { downloadInvoice } from "../utils/generateInvoice";
 
 const API = "http://localhost:8080";
 function getToken() { return localStorage.getItem("token"); }
@@ -83,17 +84,22 @@ export default function BuyerProfile() {
               </div>
             </div>
           </div>
-          {/* Stats */}
-          <div className="flex items-center bg-white rounded-2xl border border-stone-200 shadow-sm px-2 py-4 self-start">
-            {[{v:orders.length,l:"Purchased"},{v:liked.length,l:"Saved"},{v:following.length,l:"Following"}].map((s,i)=>(
-              <div key={s.l} className="flex items-center">
-                <div className="text-center px-4 sm:px-5">
-                  <span className="block font-bold leading-none" style={{fontFamily:"'Roboto',sans-serif",fontSize:"clamp(22px,4vw,28px)",color:"#dc2626"}}>{s.v}</span>
-                  <span className="text-stone-400 tracking-widest uppercase mt-1 block" style={{fontSize:9}}>{s.l}</span>
+
+          {/* Stats + Logout */}
+          <div className="flex items-center gap-3 self-start">
+            <div className="flex items-center bg-white rounded-2xl border border-stone-200 shadow-sm px-2 py-4">
+              {[{v:orders.length,l:"Purchased"},{v:liked.length,l:"Saved"},{v:following.length,l:"Following"}].map((s,i)=>(
+                <div key={s.l} className="flex items-center">
+                  <div className="text-center px-4 sm:px-5">
+                    <span className="block font-bold leading-none" style={{fontFamily:"'Roboto',sans-serif",fontSize:"clamp(22px,4vw,28px)",color:"#dc2626"}}>{s.v}</span>
+                    <span className="text-stone-400 tracking-widest uppercase mt-1 block" style={{fontSize:9}}>{s.l}</span>
+                  </div>
+                  {i<2&&<div className="w-px h-7 bg-stone-200"/>}
                 </div>
-                {i<2&&<div className="w-px h-7 bg-stone-200"/>}
-              </div>
-            ))}
+              ))}
+            </div>
+
+        
           </div>
         </div>
       </div>
@@ -128,9 +134,17 @@ export default function BuyerProfile() {
                     <p className="text-xs text-stone-300 uppercase tracking-widest mb-0.5" style={{fontSize:9}}>Price Paid</p>
                     <p className="text-sm font-bold" style={{color:"#dc2626"}}>Rs. {Number(order.pricePaid).toLocaleString()}</p>
                   </div>
-                  <span className={`text-xs font-bold tracking-widest uppercase px-2 py-1 rounded-full whitespace-nowrap flex-shrink-0 ${statusCls[order.status.toLowerCase().replace("_","-")]||statusCls.pending}`} style={{fontSize:9}}>
-                    {order.status.replace("_"," ")}
-                  </span>
+                  <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                    <span className={`text-xs font-bold tracking-widest uppercase px-2 py-1 rounded-full whitespace-nowrap ${statusCls[order.status.toLowerCase().replace("_","-")]||statusCls.pending}`} style={{fontSize:9}}>
+                      {order.status.replace("_"," ")}
+                    </span>
+                    <button
+                      onClick={()=>downloadInvoice(order)}
+                      className="text-[10px] font-bold tracking-widest uppercase text-red-600 hover:text-red-700 bg-transparent border-none cursor-pointer whitespace-nowrap"
+                    >
+                      ⬇ Invoice
+                    </button>
+                  </div>
                 </div>
               ))}
           </div>

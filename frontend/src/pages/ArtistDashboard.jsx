@@ -254,7 +254,7 @@ export default function ArtistDashboard() {
       <Navbar />
 
       {/* ── Page tabs ── */}
-      <div className="sticky top-16 z-20 flex items-center justify-between px-6 md:px-8 h-[52px] bg-cream  overflow-x-auto no-scrollbar">
+<div className="sticky top-16 z-20 flex items-center justify-between px-6 md:px-8 h-[60px] pt-2 bg-cream overflow-x-auto no-scrollbar">
        <span className="text-xl font-bold tracking-wide text-[#1c1917] whitespace-nowrap mr-4">
         My Studio
       </span>

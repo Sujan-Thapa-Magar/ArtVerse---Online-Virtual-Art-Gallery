@@ -80,19 +80,20 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen pb-10 bg-cream text-[#1c1917]">
-{/* 
-      <Navbar /> */}
+
+      <Navbar />
 
       {/* ── Page tabs ── */}
-      <div className="sticky top-16 z-20 flex items-center justify-between px-6 md:px-8 h-[52px] bg-white border-b border-stone-200 shadow-sm">
+
+      <div className="sticky top-16 z-20 flex items-center justify-between px-6 md:px-8 h-[52px] bg-cream ">
         <span className="text-base font-bold tracking-wide text-[#1c1917]">
           Admin Panel
         </span>
         <div className="flex items-center gap-1">
-          {["Dashboard", "Analytics", "System"].map((tab) => (
+          {["Dashboard", "System"].map((tab) => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => tab === "System" ? navigate("/superadmin") : setActiveTab(tab)}
               className={`px-4 py-2 text-[13px] font-medium border-b-2 transition-all duration-200 cursor-pointer bg-transparent ${
                 activeTab === tab
                   ? "border-red-600 text-red-600 font-semibold"

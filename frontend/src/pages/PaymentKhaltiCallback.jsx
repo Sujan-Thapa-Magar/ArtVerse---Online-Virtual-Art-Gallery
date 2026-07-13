@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import { downloadInvoice } from "../utils/generateInvoice";
 
 /**
  * Khalti redirects the browser here after checkout (success, pending, or
@@ -13,8 +14,17 @@ export default function PaymentKhaltiCallback() {
   const [params] = useSearchParams();
   const [status, setStatus] = useState("verifying"); // verifying | success | cancelled | error
   const [message, setMessage] = useState("");
+  const [order, setOrder] = useState(null);
+  const verifyStarted = useRef(false);
 
   useEffect(() => {
+    // Guards against StrictMode's double effect-invocation in dev (and any
+    // accidental re-run) actually firing the verify call twice — a second
+    // buyNow would hit "artwork no longer for sale" and could race the first
+    // request's success response back to the UI as a false "Verification failed".
+    if (verifyStarted.current) return;
+    verifyStarted.current = true;
+
     const token = localStorage.getItem("token");
     if (!token) { navigate("/login"); return; }
 
@@ -49,9 +59,10 @@ export default function PaymentKhaltiCallback() {
           body: JSON.stringify({ pidx, purchaseOrderId }),
         });
         if (res.ok) {
+          const placedOrder = await res.json();
+          setOrder(placedOrder);
           setStatus("success");
           setMessage("Payment verified and your order has been placed.");
-          setTimeout(() => navigate("/profile"), 2200);
         } else {
           const errText = await res.text();
           setStatus("error");
@@ -82,7 +93,20 @@ export default function PaymentKhaltiCallback() {
               <div className="w-14 h-14 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-3xl">✓</div>
               <h1 className="text-2xl font-black text-stone-900">Payment successful</h1>
               <p className="text-stone-500 text-sm">{message}</p>
-              <p className="text-stone-400 text-xs">Redirecting to your profile…</p>
+              <div className="flex gap-3 mt-2">
+                <button
+                  onClick={() => downloadInvoice(order, "Khalti")}
+                  className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold tracking-widest uppercase rounded-full transition-colors cursor-pointer border-none"
+                >
+                  ⬇ Download Invoice
+                </button>
+                <button
+                  onClick={() => navigate("/profile")}
+                  className="px-5 py-2.5 bg-white border border-stone-200 text-stone-600 text-xs font-bold tracking-widest uppercase rounded-full hover:border-stone-400 transition-colors cursor-pointer"
+                >
+                  My Profile
+                </button>
+              </div>
             </>
           )}
 

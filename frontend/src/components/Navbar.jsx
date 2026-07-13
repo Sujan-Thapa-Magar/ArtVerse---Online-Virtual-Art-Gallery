@@ -55,7 +55,7 @@ export default function Navbar({ active = "" }) {
   };
 
   const goToProfile = () =>
-    navigate(isAdmin ? "/superadmin" : isArtist ? "/dashboard" : "/profile");
+    navigate(isAdmin ? "/admin" : isArtist ? "/dashboard" : "/profile");
 
   const goToExhibition = () =>
     navigate(exhibitionId ? `/exhibition/${exhibitionId}` : "/home");
@@ -82,7 +82,7 @@ export default function Navbar({ active = "" }) {
     ...(!isGuest && !isArtist && !isAdmin
       ? [{ label: "👤  My Profile", path: "/profile" }]
       : []),
-    ...(!isGuest && isAdmin ? [{ label: "⚙️  Admin Panel", path: "/superadmin" }] : []),
+    ...(!isGuest && isAdmin ? [{ label: "⚙️  Admin Panel", path: "/admin" }] : []),
   ];
 
   return (
@@ -153,12 +153,31 @@ export default function Navbar({ active = "" }) {
                 Login
               </button>
             ) : (
-              <button
-                onClick={goToProfile}
-                className="w-9 h-9 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center text-sm font-bold cursor-pointer border-none transition-colors"
-              >
-                {initial}
-              </button>
+              <div className="relative group">
+                <button
+                  className="w-9 h-9 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center text-sm font-bold cursor-pointer border-none transition-colors"
+                >
+                  {initial}
+                </button>
+
+                {/* Invisible bridge so the dropdown doesn't disappear on the gap between button and menu */}
+                <div className="absolute right-0 top-full h-2 w-full" />
+
+                <div className="absolute right-0 top-full mt-2 w-40 bg-white rounded-xl border border-stone-200 shadow-lg py-1.5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
+                  <button
+                    onClick={goToProfile}
+                    className="w-full text-left px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50 hover:text-red-600 bg-transparent border-none cursor-pointer transition-colors"
+                  >
+                    {isArtist ? "My Studio" : isAdmin ? "Admin Panel" : "My Profile"}
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 bg-transparent border-none cursor-pointer transition-colors"
+                  >
+                    Logout
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </div>
