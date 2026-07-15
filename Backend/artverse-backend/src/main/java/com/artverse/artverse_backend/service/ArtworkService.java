@@ -65,11 +65,20 @@ public class ArtworkService {
         return artworkRepository.findAllByOrderByCreatedAtDesc();
     }
 
-    public Artwork getArtworkById(Long id) {
+    public Artwork getArtworkById(Long id, String viewerEmail) {
         Artwork artwork = artworkRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Artwork not found with id: " + id));
-        artwork.setViewCount((artwork.getViewCount() == null ? 0L : artwork.getViewCount()) + 1);
-        return artworkRepository.save(artwork);
+
+        boolean isOwner = viewerEmail != null
+                && artwork.getArtist() != null
+                && viewerEmail.equals(artwork.getArtist().getEmail());
+
+        if (!isOwner) {
+            artwork.setViewCount((artwork.getViewCount() == null ? 0L : artwork.getViewCount()) + 1);
+            artwork = artworkRepository.save(artwork);
+        }
+
+        return artwork;
     }
 
     public List<Artwork> getArtworksByArtist(Long artistId) {

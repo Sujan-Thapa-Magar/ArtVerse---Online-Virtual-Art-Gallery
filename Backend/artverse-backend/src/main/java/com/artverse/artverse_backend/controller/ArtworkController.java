@@ -74,9 +74,15 @@ public class ArtworkController {
     // Get a single artwork by its ID
     // -----------------------------------------------
     @GetMapping("/{id}")
-    public ResponseEntity<?> getArtworkById(@PathVariable Long id) {
+    public ResponseEntity<?> getArtworkById(@PathVariable Long id, Authentication authentication) {
         try {
-            Artwork artwork = artworkService.getArtworkById(id);
+            // Anonymous/guest viewers have no real authentication — Spring Security
+            // gives them an "anonymousUser" principal rather than null, so we check
+            // for both to get a real viewer email only when someone is actually logged in.
+            String viewerEmail = (authentication != null && authentication.isAuthenticated()
+                    && !"anonymousUser".equals(authentication.getName()))
+                    ? authentication.getName() : null;
+            Artwork artwork = artworkService.getArtworkById(id, viewerEmail);
             return ResponseEntity.ok(artwork);
         } catch (Exception e) {
             return ResponseEntity.notFound().build();
