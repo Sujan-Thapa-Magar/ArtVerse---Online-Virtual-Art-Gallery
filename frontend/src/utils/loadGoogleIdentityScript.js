@@ -9,7 +9,9 @@ export function loadGoogleIdentityScript() {
   if (!scriptPromise) {
     scriptPromise = new Promise((resolve, reject) => {
       const script = document.createElement("script");
-      script.src = "https://accounts.google.com/gsi/client";
+      // hl=en forces the button/popups to always render in English,
+      // regardless of the visitor's browser or Google account language.
+      script.src = "https://accounts.google.com/gsi/client?hl=en";
       script.async = true;
       script.defer = true;
       script.onload = () => resolve(window.google);

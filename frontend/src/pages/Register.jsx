@@ -217,29 +217,29 @@ export default function Register() {
     <div className="min-h-screen bg-cream">
 
       {/* ── Floating card — centered ── */}
-      <div className="flex items-center justify-center px-6 py-12">
+      <div className="flex items-center justify-center px-4 py-6">
         <div
-          className="w-full max-w-xl bg-white rounded-2xl overflow-hidden border border-stone-200"
+          className="w-full max-w-md bg-white rounded-2xl overflow-hidden border border-stone-200"
           style={{ boxShadow: "0 20px 50px rgba(28,25,23,0.08)" }}
         >
-          <main className="px-10 py-10 md:px-12 md:py-12">
+          <main className="px-6 py-6 md:px-8 md:py-7">
 
-            <a href="/" className="flex justify-center mb-6">
-            <img src="/logo-dark.png" alt="ArtVerse" className="h-36 sm:h-40 object-contain" />
+            <a href="/" className="flex justify-center mb-3">
+            <img src="/logo-dark.png" alt="ArtVerse" className="h-20 sm:h-24 object-contain" />
                 </a>
 
-            <h1 className="text-3xl font-bold text-center text-gray-900 mb-2">
+            <h1 className="text-xl font-bold text-center text-gray-900 mb-1">
               The Sacred Curator
             </h1>
-            <p className="text-sm text-gray-400 text-center mb-6">
+            <p className="text-xs text-gray-400 text-center mb-4">
               Enter the sanctum of contemporary expression.
             </p>
 
             {/* Tabs */}
-            <div className="flex justify-center gap-8 border-b border-gray-200 mb-6">
+            <div className="flex justify-center gap-6 border-b border-gray-200 mb-4">
               <button
                 onClick={() => { setActiveTab("register"); setMessage(""); }}
-                className={`text-xs tracking-widest pb-3 bg-transparent border-none cursor-pointer font-medium transition-colors ${
+                className={`text-xs tracking-widest pb-2 bg-transparent border-none cursor-pointer font-medium transition-colors ${
                   activeTab === "register"
                     ? "text-red-600 border-b-2 border-red-600"
                     : "text-gray-400"
@@ -249,7 +249,7 @@ export default function Register() {
               </button>
               <button
                 onClick={() => { setActiveTab("login"); setMessage(""); }}
-                className={`text-xs tracking-widest pb-3 bg-transparent border-none cursor-pointer font-medium transition-colors ${
+                className={`text-xs tracking-widest pb-2 bg-transparent border-none cursor-pointer font-medium transition-colors ${
                   activeTab === "login"
                     ? "text-red-600 border-b-2 border-red-600"
                     : "text-gray-400"
@@ -263,26 +263,26 @@ export default function Register() {
               <form onSubmit={handleRegister}>
 
                 {/* Profile Photo Upload */}
-                <div className="flex flex-col items-center mb-6">
+                <div className="flex flex-col items-center mb-4">
                   <label htmlFor="photo-upload" className="cursor-pointer">
-                    <div className="w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center relative bg-gray-50 overflow-hidden">
+                    <div className="w-14 h-14 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center relative bg-gray-50 overflow-hidden">
                       {photoPreview ? (
                         <img src={photoPreview} alt="preview" className="w-full h-full object-cover" />
                       ) : (
-                        <span className="text-2xl text-gray-300">📷</span>
+                        <span className="text-lg text-gray-300">📷</span>
                       )}
-                      <div className="absolute -bottom-1.5 -right-1.5 w-5 h-5 rounded-full bg-gray-700 text-white text-xs flex items-center justify-center">
+                      <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-gray-700 text-white text-[10px] flex items-center justify-center">
                         ✎
                       </div>
                     </div>
                   </label>
                   <input id="photo-upload" type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
-                  <span className="text-xs tracking-widest text-gray-300 mt-2.5">UPLOAD PROFILE PHOTO</span>
+                  <span className="text-[10px] tracking-widest text-gray-300 mt-1.5">UPLOAD PROFILE PHOTO</span>
                 </div>
 
                 {/* Full Name */}
-                <div className="mb-5">
-                  <label className="block text-xs tracking-widest text-gray-500 mb-2 font-medium">FULL NAME</label>
+                <div className="mb-3">
+                  <label className="block text-xs tracking-widest text-gray-500 mb-1.5 font-medium">FULL NAME</label>
                   <input
                     type="text"
                     name="name"
@@ -290,13 +290,13 @@ export default function Register() {
                     value={formData.name}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3.5 bg-gray-100 border border-gray-200 rounded-md text-sm text-gray-700 outline-none focus:border-gray-400 transition-colors"
+                    className="w-full px-3 py-2.5 bg-gray-100 border border-gray-200 rounded-md text-sm text-gray-700 outline-none focus:border-gray-400 transition-colors"
                   />
                 </div>
 
                 {/* Email */}
-                <div className="mb-5">
-                  <label className="block text-xs tracking-widest text-gray-500 mb-2 font-medium">EMAIL ADDRESS</label>
+                <div className="mb-3">
+                  <label className="block text-xs tracking-widest text-gray-500 mb-1.5 font-medium">EMAIL ADDRESS</label>
                   <input
                     type="email"
                     name="email"
@@ -304,13 +304,13 @@ export default function Register() {
                     value={formData.email}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3.5 bg-gray-100 border border-gray-200 rounded-md text-sm text-gray-700 outline-none focus:border-gray-400 transition-colors"
+                    className="w-full px-3 py-2.5 bg-gray-100 border border-gray-200 rounded-md text-sm text-gray-700 outline-none focus:border-gray-400 transition-colors"
                   />
                 </div>
 
                 {/* Password */}
-                <div className="mb-5">
-                  <label className="block text-xs tracking-widest text-gray-500 mb-2 font-medium">PASSWORD</label>
+                <div className="mb-3">
+                  <label className="block text-xs tracking-widest text-gray-500 mb-1.5 font-medium">PASSWORD</label>
                   <input
                     type="password"
                     name="password"
@@ -318,37 +318,37 @@ export default function Register() {
                     value={formData.password}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3.5 bg-gray-100 border border-gray-200 rounded-md text-sm text-gray-700 outline-none focus:border-gray-400 transition-colors"
+                    className="w-full px-3 py-2.5 bg-gray-100 border border-gray-200 rounded-md text-sm text-gray-700 outline-none focus:border-gray-400 transition-colors"
                   />
                 </div>
 
                 {/* Role Selector */}
-                <div className="mb-5">
-                  <label className="block text-xs tracking-widest text-gray-500 mb-2 font-medium">I AM A</label>
+                <div className="mb-3">
+                  <label className="block text-xs tracking-widest text-gray-500 mb-1.5 font-medium">I AM A</label>
                   <div className="relative">
                     <select
                       name="role"
                       value={formData.role}
                       onChange={handleChange}
-                      className="w-full px-4 py-3.5 bg-gray-100 border border-gray-200 rounded-md text-sm text-gray-700 outline-none appearance-none cursor-pointer"
+                      className="w-full px-3 py-2.5 bg-gray-100 border border-gray-200 rounded-md text-sm text-gray-700 outline-none appearance-none cursor-pointer"
                     >
                       <option value="ARTIST">Artist</option>
                       <option value="BUYER">Buyer / Art Lover</option>
                     </select>
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">▾</span>
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">▾</span>
                   </div>
                 </div>
 
                 {/* Artistic Discipline — only for ARTIST */}
                 {formData.role === "ARTIST" && (
-                  <div className="mb-5">
-                    <label className="block text-xs tracking-widest text-gray-500 mb-2 font-medium">ARTISTIC DISCIPLINE</label>
+                  <div className="mb-3">
+                    <label className="block text-xs tracking-widest text-gray-500 mb-1.5 font-medium">ARTISTIC DISCIPLINE</label>
                     <div className="relative">
                       <select
                         name="discipline"
                         value={formData.discipline}
                         onChange={handleChange}
-                        className="w-full px-4 py-3.5 bg-gray-100 border border-gray-200 rounded-md text-sm text-gray-400 outline-none appearance-none cursor-pointer"
+                        className="w-full px-3 py-2.5 bg-gray-100 border border-gray-200 rounded-md text-sm text-gray-400 outline-none appearance-none cursor-pointer"
                       >
                         <option value="">Select your craft</option>
                         <option value="painting">Painting</option>
@@ -357,26 +357,26 @@ export default function Register() {
                         <option value="digital">Digital Art</option>
                         <option value="traditional">Traditional Art</option>
                       </select>
-                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">▾</span>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">▾</span>
                     </div>
                   </div>
                 )}
 
                 {/* ID Card Upload — only for ARTIST */}
                 {formData.role === "ARTIST" && (
-                  <div className="mb-5">
-                    <label className="block text-xs tracking-widest text-gray-500 mb-2 font-medium">
+                  <div className="mb-3">
+                    <label className="block text-xs tracking-widest text-gray-500 mb-1.5 font-medium">
                       GOVERNMENT ID / CITIZENSHIP
                     </label>
                     <label htmlFor="id-upload" className="cursor-pointer">
-                      <div className="w-full px-4 py-6 bg-gray-100 border-2 border-dashed border-gray-300 rounded-md flex flex-col items-center justify-center gap-2 hover:border-gray-400 transition-colors">
+                      <div className="w-full px-3 py-4 bg-gray-100 border-2 border-dashed border-gray-300 rounded-md flex flex-col items-center justify-center gap-1.5 hover:border-gray-400 transition-colors">
                         {idPreview ? (
-                          <img src={idPreview} alt="ID preview" className="h-24 object-contain rounded" />
+                          <img src={idPreview} alt="ID preview" className="h-16 object-contain rounded" />
                         ) : (
                           <>
-                            <span className="text-2xl text-gray-300">🪪</span>
-                            <span className="text-xs tracking-widest text-gray-400">UPLOAD YOUR ID CARD</span>
-                            <span className="text-xs text-gray-300">Citizenship, Passport or National ID</span>
+                            <span className="text-lg text-gray-300">🪪</span>
+                            <span className="text-[10px] tracking-widest text-gray-400">UPLOAD YOUR ID CARD</span>
+                            <span className="text-[10px] text-gray-300">Citizenship, Passport or National ID</span>
                           </>
                         )}
                       </div>
@@ -389,16 +389,16 @@ export default function Register() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-4 bg-red-600 text-white text-xs tracking-widest font-semibold rounded-md mb-4 hover:bg-red-700 transition-colors disabled:opacity-60 cursor-pointer"
+                  className="w-full py-3 bg-red-600 text-white text-xs tracking-widest font-semibold rounded-md mb-3 hover:bg-red-700 transition-colors disabled:opacity-60 cursor-pointer"
                 >
                   {loading ? "CREATING..." : formData.role === "ARTIST" ? "CREATE ARTIST ACCOUNT" : "CREATE BUYER ACCOUNT"}
                 </button>
 
-                <div className="text-center text-gray-300 text-xs mb-4">or</div>
+                <div className="text-center text-gray-300 text-xs mb-3">or</div>
 
                 <div id="google-signin-btn" className="w-full flex justify-center" />
 
-                <p className="text-center text-xs text-gray-300 mt-6 leading-relaxed">
+                <p className="text-center text-[10px] text-gray-300 mt-4 leading-relaxed">
                   By joining ArtVerse, you agree to our{" "}
                   <span className="text-gray-500 underline cursor-pointer">Curator Agreement</span>{" "}
                   and{" "}
@@ -409,8 +409,8 @@ export default function Register() {
             ) : (
 
               <form onSubmit={handleLogin}>
-                <div className="mb-5">
-                  <label className="block text-xs tracking-widest text-gray-500 mb-2 font-medium">EMAIL ADDRESS</label>
+                <div className="mb-3">
+                  <label className="block text-xs tracking-widest text-gray-500 mb-1.5 font-medium">EMAIL ADDRESS</label>
                   <input
                     type="email"
                     name="email"
@@ -418,12 +418,12 @@ export default function Register() {
                     value={loginData.email}
                     onChange={handleLoginChange}
                     required
-                    className="w-full px-4 py-3.5 bg-gray-100 border border-gray-200 rounded-md text-sm text-gray-700 outline-none focus:border-gray-400 transition-colors"
+                    className="w-full px-3 py-2.5 bg-gray-100 border border-gray-200 rounded-md text-sm text-gray-700 outline-none focus:border-gray-400 transition-colors"
                   />
                 </div>
 
-                <div className="mb-5">
-                  <label className="block text-xs tracking-widest text-gray-500 mb-2 font-medium">PASSWORD</label>
+                <div className="mb-3">
+                  <label className="block text-xs tracking-widest text-gray-500 mb-1.5 font-medium">PASSWORD</label>
                   <input
                     type="password"
                     name="password"
@@ -431,23 +431,23 @@ export default function Register() {
                     value={loginData.password}
                     onChange={handleLoginChange}
                     required
-                    className="w-full px-4 py-3.5 bg-gray-100 border border-gray-200 rounded-md text-sm text-gray-700 outline-none focus:border-gray-400 transition-colors"
+                    className="w-full px-3 py-2.5 bg-gray-100 border border-gray-200 rounded-md text-sm text-gray-700 outline-none focus:border-gray-400 transition-colors"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-4 bg-red-600 text-white text-xs tracking-widest font-semibold rounded-md mb-4 hover:bg-red-700 transition-colors disabled:opacity-60 cursor-pointer"
+                  className="w-full py-3 bg-red-600 text-white text-xs tracking-widest font-semibold rounded-md mb-3 hover:bg-red-700 transition-colors disabled:opacity-60 cursor-pointer"
                 >
                   {loading ? "LOGGING IN..." : "LOGIN"}
                 </button>
 
-                <div className="text-center text-gray-300 text-xs mb-4">or</div>
+                <div className="text-center text-gray-300 text-xs mb-3">or</div>
 
                 <div id="google-signin-btn" className="w-full flex justify-center" />
 
-                <p className="text-center text-xs text-gray-400 mt-6">
+                <p className="text-center text-xs text-gray-400 mt-4">
                   Don't have an account?{" "}
                   <span
                     className="text-red-600 underline cursor-pointer font-medium"
@@ -460,7 +460,7 @@ export default function Register() {
             )}
 
             {message && (
-              <p className="text-center text-sm mt-4 p-3 rounded-md bg-gray-100">
+              <p className="text-center text-sm mt-3 p-2.5 rounded-md bg-gray-100">
                 {message}
               </p>
             )}

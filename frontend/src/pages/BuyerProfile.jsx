@@ -5,10 +5,7 @@ import { downloadInvoice } from "../utils/generateInvoice";
 
 const API = "http://localhost:8080";
 function getToken() { return localStorage.getItem("token"); }
-function getCurrentUser() {
-  const t = getToken(); if (!t) return null;
-  try { return JSON.parse(atob(t.split(".")[1])); } catch { return null; }
-}
+
 const statusCls = {
   delivered:    "bg-green-50 text-green-700 border border-green-200",
   "in-transit": "bg-amber-50 text-amber-700 border border-amber-200",
@@ -32,15 +29,23 @@ export default function BuyerProfile() {
     (async () => {
       setLoading(true);
       try {
-        const [oR,lR,fR,nR] = await Promise.all([
+        const [meR,oR,lR,fR,nR] = await Promise.all([
+          fetch(`${API}/api/users/me`,{headers}),
           fetch(`${API}/api/orders/my`,{headers}), fetch(`${API}/api/likes/my`,{headers}),
           fetch(`${API}/api/follows/following`,{headers}), fetch(`${API}/api/notifications/unread-count`,{headers}),
         ]);
         const oD=oR.ok?await oR.json():[]; const lD=lR.ok?await lR.json():[]; const fD=fR.ok?await fR.json():[];
         setOrders(oD); setLiked(lD); setFollowing(fD);
         if(nR.ok){const n=await nR.json(); setUnread(n.unreadCount||0);}
-        if(oD.length>0) setProfile(oD[0].buyer);
-        else { const u=getCurrentUser(); setProfile({name:u?.sub||"User",createdAt:null}); }
+
+        // Profile always comes from the user's own account record — this
+        // gives the real name/photo whether or not they've placed an order,
+        // instead of falling back to the JWT email or an order's buyer field.
+        if (meR.ok) {
+          setProfile(await meR.json());
+        } else {
+          setProfile({ name: "User", createdAt: null });
+        }
       } catch(e){console.error(e);}
       finally{setLoading(false);}
     })();

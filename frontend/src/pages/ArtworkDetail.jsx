@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Avatar from "../components/Avatar";
@@ -60,7 +60,17 @@ export default function ArtworkDetail() {
     navigate("/login");
   };
 
+  // Guards against React 18 Strict Mode's double-invoked effect in dev,
+  // which would otherwise call GET /api/artworks/{id} twice on a single
+  // page load — and since that endpoint increments the view count as a
+  // side effect, the count would jump by 2 instead of 1. Still refetches
+  // normally when the artwork id actually changes (real navigation).
+  const fetchedIdRef = useRef(null);
+
   useEffect(() => {
+    if (fetchedIdRef.current === id) return;
+    fetchedIdRef.current = id;
+
     const fetchAll = async () => {
       try {
         const artRes = await fetch(`http://localhost:8080/api/artworks/${id}`, {
