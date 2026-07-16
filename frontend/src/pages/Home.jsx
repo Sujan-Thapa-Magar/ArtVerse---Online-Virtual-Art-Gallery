@@ -72,11 +72,11 @@ export default function Home() {
 
       {/* Hero Section */}
       <div className="relative w-full h-72 md:h-96 overflow-hidden">
-        <img
-          src="https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1200&q=80"
-          alt="Hero"
-          className="w-full h-full object-cover"
-        />
+          <img
+        src="/homepage.png"
+        alt="Hero"
+        className="w-full h-full object-cover"
+      />
         <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-stone-950/30 to-transparent" />
         <div className="absolute bottom-0 left-0 p-6 md:p-10">
           <div className="bg-red-600 text-white text-xs font-bold px-3 py-1 inline-block mb-3 tracking-widest uppercase rounded">

@@ -13,13 +13,12 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-10 pb-10 border-b border-stone-100">
           <div className="max-w-xs">
-            <p className="text-stone-500 text-xs mt-3 leading-relaxed">
-              Nepal's first virtual art gallery — connecting local artists with
-              collectors around the world.
+            <p className="text-stone-500 text-xs leading-relaxed">
+              Nepal's first virtual art gallery — connecting local artists with collectors around the world.
             </p>
           </div>
 
-          <div className="flex gap-12">
+          <div className="flex flex-wrap gap-x-12 gap-y-8">
             <div>
               <p className="text-stone-900 text-[10px] font-bold tracking-[0.2em] uppercase mb-4">
                 Explore
@@ -58,16 +57,32 @@ export default function Footer() {
 
             <div>
               <p className="text-stone-900 text-[10px] font-bold tracking-[0.2em] uppercase mb-4">
-                Contact
+                Company
               </p>
               <div className="flex flex-col gap-2.5">
-                <a
-                  href="mailto:hello@artverse.com"
-                  className="text-stone-500 hover:text-red-600 text-xs transition-colors no-underline"
+                <button onClick={() => navigate("/about-us")} className={linkCls}>
+                  About Us
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-stone-900 text-[10px] font-bold tracking-[0.2em] uppercase mb-4">
+                Contact Us
+              </p>
+              <div className="flex flex-col gap-2.5">
+                <button
+                  onClick={() => { window.location.href = "mailto:itsmesujan2003@gmail.com"; }}
+                  className={linkCls}
                 >
-                  hello@artverse.com
-                </a>
-                <span className="text-stone-500 text-xs">Kathmandu, Nepal</span>
+                  itsmesujan2003@gmail.com
+                </button>
+                <button
+                  onClick={() => { window.location.href = "tel:+9779800000000"; }}
+                  className={linkCls}
+                >
+                  +977 9848938289
+                </button>
               </div>
             </div>
           </div>

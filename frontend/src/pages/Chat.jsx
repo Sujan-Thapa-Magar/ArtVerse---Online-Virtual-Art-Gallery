@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import Navbar from "../components/Navbar";
 
 const API = "http://localhost:8080";
 
@@ -171,9 +170,8 @@ export default function Chat() {
   }
 
   return (
-    <div style={{ background: C.pageBg, color: C.text }}>
-      <Navbar />
-      <div style={{ display: "flex", height: "calc(100vh - 64px)" }}>
+    <div style={{ background: C.pageBg, color: C.text, height: "100vh", overflow: "hidden" }}>
+      <div style={{ display: "flex", height: "100%" }}>
 
       {/* ── Sidebar ── */}
       <div style={{ width: 300, minWidth: 300, background: C.sidebar, borderRight: `1px solid ${C.sidebarBorder}`, display: "flex", flexDirection: "column" }}
@@ -233,7 +231,7 @@ export default function Chat() {
       </div>
 
       {/* ── Chat Window ── */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", background: C.windowBg }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", background: C.windowBg, minHeight: 0 }}>
 
         {!selectedUser ? (
           /* Empty state */
@@ -354,6 +352,11 @@ export default function Chat() {
       </div>
 
       <style>{`
+        html, body, #root {
+          margin: 0;
+          padding: 0;
+          height: 100%;
+        }
         @media (max-width: 640px) {
           .hidden { display: none !important; }
         }

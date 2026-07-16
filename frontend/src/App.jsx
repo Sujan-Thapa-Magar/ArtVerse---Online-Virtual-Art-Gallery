@@ -16,6 +16,7 @@ import SuperAdmin from "./pages/SuperAdmin";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentFailure from "./pages/PaymentFailure";
 import PaymentKhaltiCallback from "./pages/PaymentKhaltiCallback";
+import About from "./pages/AboutUs";
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/home" element={<Home />} />
           <Route path="/gallery" element={<Gallery />} />
+          <Route path="/about-us" element={< About/>} />
           <Route path="/artwork/:id" element={<ArtworkDetail />} />
           <Route path="/exhibition/:id" element={<VirtualExhibition />} />
 
@@ -42,7 +44,7 @@ function App() {
           <Route path="/notification" element={
             <ProtectedRoute><Notifications/></ProtectedRoute>} />
           <Route path="/admin" element={
-            <ProtectedRoute><AdminDashboard/></ProtectedRoute>} />
+            <ProtectedRoute allowedRoles={["ADMIN"]}><AdminDashboard/></ProtectedRoute>} />
           <Route path="/chat" element={
             <ProtectedRoute><Chat/></ProtectedRoute>} />
           <Route path="/chat/:userId" element={
