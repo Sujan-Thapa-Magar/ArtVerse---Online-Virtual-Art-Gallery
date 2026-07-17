@@ -1,5 +1,6 @@
 package com.artverse.artverse_backend.controller;
 
+import com.artverse.artverse_backend.dto.CommentRequest;
 import com.artverse.artverse_backend.model.Artwork;
 import com.artverse.artverse_backend.model.Comment;
 import com.artverse.artverse_backend.model.User;
@@ -7,13 +8,14 @@ import com.artverse.artverse_backend.repository.ArtworkRepository;
 import com.artverse.artverse_backend.repository.CommentRepository;
 import com.artverse.artverse_backend.repository.UserRepository;
 import com.artverse.artverse_backend.service.NotificationService;
+import com.artverse.artverse_backend.util.InputSanitizer;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/comments")
@@ -34,13 +36,10 @@ public class CommentController {
     @PostMapping("/{artworkId}")
     public ResponseEntity<?> addComment(
             @PathVariable Long artworkId,
-            @RequestBody Map<String, String> body,
+            @Valid @RequestBody CommentRequest request,
             Authentication auth) {
 
-        String text = body.get("text");
-        if (text == null || text.trim().isEmpty()) {
-            return ResponseEntity.badRequest().body("Comment text cannot be empty.");
-        }
+        String text = InputSanitizer.stripHtml(request.getText());
 
         User user = userRepository.findByEmail(auth.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -51,7 +50,7 @@ public class CommentController {
         Comment comment = new Comment();
         comment.setUser(user);
         comment.setArtwork(artwork);
-        comment.setText(text.trim());
+        comment.setText(text);
 
         Comment saved = commentRepository.save(comment);
 
@@ -61,7 +60,7 @@ public class CommentController {
             notificationService.sendNotification(
                     artworkOwner,
                     "COMMENT",
-                    user.getName() + " commented on your artwork \"" + artwork.getTitle() + "\": " + text.trim()
+                    user.getName() + " commented on your artwork \"" + artwork.getTitle() + "\": " + text
             );
         }
 

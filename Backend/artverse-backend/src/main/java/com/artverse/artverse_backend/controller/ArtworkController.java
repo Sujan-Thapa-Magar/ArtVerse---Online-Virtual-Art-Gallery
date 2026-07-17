@@ -3,9 +3,13 @@ package com.artverse.artverse_backend.controller;
 import com.artverse.artverse_backend.dto.ArtworkUploadRequest;
 import com.artverse.artverse_backend.model.Artwork;
 import com.artverse.artverse_backend.service.ArtworkService;
+import com.artverse.artverse_backend.util.InputSanitizer;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -14,6 +18,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/artworks")
 @CrossOrigin(origins = "http://localhost:5173")
+@Validated
 public class ArtworkController {
 
     @Autowired
@@ -25,13 +30,13 @@ public class ArtworkController {
     // -----------------------------------------------
     @PostMapping("/upload")
     public ResponseEntity<?> uploadArtwork(
-            @RequestParam("title") String title,
-            @RequestParam("description") String description,
-            @RequestParam(value = "medium", required = false) String medium,
-            @RequestParam(value = "dimensions", required = false) String dimensions,
+            @RequestParam("title") @NotBlank(message = "Title is required.") @Size(max = 200, message = "Title must be at most 200 characters.") String title,
+            @RequestParam("description") @NotBlank(message = "Description is required.") @Size(max = 3000, message = "Description must be at most 3000 characters.") String description,
+            @RequestParam(value = "medium", required = false) @Size(max = 100, message = "Medium must be at most 100 characters.") String medium,
+            @RequestParam(value = "dimensions", required = false) @Size(max = 100, message = "Dimensions must be at most 100 characters.") String dimensions,
             @RequestParam(value = "price", required = false) Double price,
             @RequestParam(value = "isForSale", defaultValue = "false") boolean isForSale,
-            @RequestParam(value = "category", required = false) String category,
+            @RequestParam(value = "category", required = false) @Size(max = 100, message = "Category must be at most 100 characters.") String category,
             @RequestParam("image") MultipartFile imageFile,
             Authentication authentication) {
 
@@ -41,13 +46,13 @@ public class ArtworkController {
 
             // Build the request object
             ArtworkUploadRequest request = new ArtworkUploadRequest();
-            request.setTitle(title);
-            request.setDescription(description);
-            request.setMedium(medium);
-            request.setDimensions(dimensions);
+            request.setTitle(InputSanitizer.stripHtml(title));
+            request.setDescription(InputSanitizer.stripHtml(description));
+            request.setMedium(InputSanitizer.stripHtml(medium));
+            request.setDimensions(InputSanitizer.stripHtml(dimensions));
             request.setPrice(price);
             request.setForSale(isForSale);
-            request.setCategory(category);
+            request.setCategory(InputSanitizer.stripHtml(category));
 
             // Call the service to save the artwork
             Artwork saved = artworkService.uploadArtwork(request, imageFile, artistEmail);
@@ -117,24 +122,24 @@ public class ArtworkController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateArtwork(
             @PathVariable Long id,
-            @RequestParam(value = "title", required = false) String title,
-            @RequestParam(value = "description", required = false) String description,
-            @RequestParam(value = "medium", required = false) String medium,
-            @RequestParam(value = "dimensions", required = false) String dimensions,
+            @RequestParam(value = "title", required = false) @Size(max = 200, message = "Title must be at most 200 characters.") String title,
+            @RequestParam(value = "description", required = false) @Size(max = 3000, message = "Description must be at most 3000 characters.") String description,
+            @RequestParam(value = "medium", required = false) @Size(max = 100, message = "Medium must be at most 100 characters.") String medium,
+            @RequestParam(value = "dimensions", required = false) @Size(max = 100, message = "Dimensions must be at most 100 characters.") String dimensions,
             @RequestParam(value = "price", required = false) Double price,
             @RequestParam(value = "isForSale", defaultValue = "false") boolean isForSale,
-            @RequestParam(value = "category", required = false) String category,
+            @RequestParam(value = "category", required = false) @Size(max = 100, message = "Category must be at most 100 characters.") String category,
             Authentication authentication) {
         try {
             String artistEmail = authentication.getName();
             ArtworkUploadRequest request = new ArtworkUploadRequest();
-            request.setTitle(title);
-            request.setDescription(description);
-            request.setMedium(medium);
-            request.setDimensions(dimensions);
+            request.setTitle(InputSanitizer.stripHtml(title));
+            request.setDescription(InputSanitizer.stripHtml(description));
+            request.setMedium(InputSanitizer.stripHtml(medium));
+            request.setDimensions(InputSanitizer.stripHtml(dimensions));
             request.setPrice(price);
             request.setForSale(isForSale);
-            request.setCategory(category);
+            request.setCategory(InputSanitizer.stripHtml(category));
             Artwork updated = artworkService.updateArtwork(id, artistEmail, request);
             return ResponseEntity.ok(updated);
         } catch (Exception e) {

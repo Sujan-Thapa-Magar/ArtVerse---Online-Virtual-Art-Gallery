@@ -1,11 +1,13 @@
 package com.artverse.artverse_backend.controller;
 
+import com.artverse.artverse_backend.dto.KhaltiVerifyRequest;
 import com.artverse.artverse_backend.model.Artwork;
 import com.artverse.artverse_backend.model.Order;
 import com.artverse.artverse_backend.repository.ArtworkRepository;
 import com.artverse.artverse_backend.service.KhaltiService;
 import com.artverse.artverse_backend.service.OrderService;
 import com.fasterxml.jackson.databind.JsonNode;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -84,15 +86,11 @@ public class KhaltiPaymentController {
 
     @PostMapping("/verify")
     public ResponseEntity<?> verify(
-            @RequestBody Map<String, String> body,
+            @Valid @RequestBody KhaltiVerifyRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
         try {
-            String pidx = body.get("pidx");
-            String purchaseOrderId = body.get("purchaseOrderId");
-            if (pidx == null || pidx.isBlank() || purchaseOrderId == null || purchaseOrderId.isBlank()) {
-                throw new RuntimeException("Missing payment reference.");
-            }
-
+            String pidx = request.getPidx();
+            String purchaseOrderId = request.getPurchaseOrderId();
             Long artworkId = parseArtworkId(purchaseOrderId);
             Artwork artwork = artworkRepository.findById(artworkId)
                     .orElseThrow(() -> new RuntimeException("Artwork not found"));

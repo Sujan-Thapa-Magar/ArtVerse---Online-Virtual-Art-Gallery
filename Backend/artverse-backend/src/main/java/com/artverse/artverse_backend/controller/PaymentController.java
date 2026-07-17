@@ -1,10 +1,12 @@
 package com.artverse.artverse_backend.controller;
 
+import com.artverse.artverse_backend.dto.EsewaVerifyRequest;
 import com.artverse.artverse_backend.model.Artwork;
 import com.artverse.artverse_backend.model.Order;
 import com.artverse.artverse_backend.repository.ArtworkRepository;
 import com.artverse.artverse_backend.service.EsewaService;
 import com.artverse.artverse_backend.service.OrderService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -87,14 +89,10 @@ public class PaymentController {
 
     @PostMapping("/verify")
     public ResponseEntity<?> verify(
-            @RequestBody Map<String, String> body,
+            @Valid @RequestBody EsewaVerifyRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
         try {
-            String transactionUuid = body.get("transactionUuid");
-            if (transactionUuid == null || transactionUuid.isBlank()) {
-                throw new RuntimeException("Missing transaction reference.");
-            }
-
+            String transactionUuid = request.getTransactionUuid();
             Long artworkId = parseArtworkId(transactionUuid);
             Artwork artwork = artworkRepository.findById(artworkId)
                     .orElseThrow(() -> new RuntimeException("Artwork not found"));

@@ -7,6 +7,7 @@ import com.artverse.artverse_backend.model.User;
 import com.artverse.artverse_backend.repository.ArtworkRepository;
 import com.artverse.artverse_backend.repository.ExhibitionArtworkRepository;
 import com.artverse.artverse_backend.repository.ExhibitionRepository;
+import com.artverse.artverse_backend.util.InputSanitizer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -29,8 +30,8 @@ public class ExhibitionService {
                                        LocalDate startDate, LocalDate endDate) {
         Exhibition exhibition = new Exhibition();
         exhibition.setArtist(artist);
-        exhibition.setTitle(title);
-        exhibition.setDescription(description);
+        exhibition.setTitle(InputSanitizer.stripHtml(title));
+        exhibition.setDescription(InputSanitizer.stripHtml(description));
         exhibition.setStartDate(startDate);
         exhibition.setEndDate(endDate);
         return exhibitionRepository.save(exhibition);
@@ -52,8 +53,8 @@ public class ExhibitionService {
     public Exhibition updateExhibition(Long id, String title, String description,
                                        LocalDate startDate, LocalDate endDate) {
         Exhibition exhibition = getById(id);
-        if (title != null) exhibition.setTitle(title);
-        if (description != null) exhibition.setDescription(description);
+        if (title != null) exhibition.setTitle(InputSanitizer.stripHtml(title));
+        if (description != null) exhibition.setDescription(InputSanitizer.stripHtml(description));
         exhibition.setStartDate(startDate);
         exhibition.setEndDate(endDate);
         return exhibitionRepository.save(exhibition);

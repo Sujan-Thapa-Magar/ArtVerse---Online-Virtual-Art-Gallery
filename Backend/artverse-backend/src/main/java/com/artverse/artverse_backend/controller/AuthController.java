@@ -5,6 +5,7 @@ import com.artverse.artverse_backend.dto.LoginRequest;
 import com.artverse.artverse_backend.dto.RegisterRequest;
 import com.artverse.artverse_backend.model.User;
 import com.artverse.artverse_backend.service.UserService;
+import com.artverse.artverse_backend.util.InputSanitizer;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +30,11 @@ public class AuthController {
     public ResponseEntity<?> register(@Valid @ModelAttribute RegisterRequest request) {
 
         try {
+            // idCardUrl must only ever be set by the upload logic below, from
+            // a file we actually saved — never trust a client-supplied value
+            // for a field that's meant to reference a server-generated URL.
+            request.setIdCardUrl(null);
+
             MultipartFile idCard = request.getIdCard();
 
             // Save ID card if provided
@@ -37,8 +43,7 @@ public class AuthController {
                 if (!Files.exists(uploadPath)) {
                     Files.createDirectories(uploadPath);
                 }
-                String originalFilename = idCard.getOriginalFilename();
-                String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+                String extension = InputSanitizer.safeImageExtension(idCard.getOriginalFilename());
                 String uniqueFilename = "id_" + UUID.randomUUID() + extension;
                 Path filePath = uploadPath.resolve(uniqueFilename);
                 Files.copy(idCard.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);

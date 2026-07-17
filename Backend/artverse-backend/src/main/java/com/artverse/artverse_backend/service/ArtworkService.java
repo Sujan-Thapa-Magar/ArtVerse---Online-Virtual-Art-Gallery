@@ -5,6 +5,7 @@ import com.artverse.artverse_backend.model.Artwork;
 import com.artverse.artverse_backend.model.User;
 import com.artverse.artverse_backend.repository.ArtworkRepository;
 import com.artverse.artverse_backend.repository.UserRepository;
+import com.artverse.artverse_backend.util.InputSanitizer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -38,8 +39,7 @@ public class ArtworkService {
             Files.createDirectories(uploadPath);
         }
 
-        String originalFilename = imageFile.getOriginalFilename();
-        String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+        String extension = InputSanitizer.safeImageExtension(imageFile.getOriginalFilename());
         String uniqueFilename = UUID.randomUUID().toString() + extension;
 
         Path filePath = uploadPath.resolve(uniqueFilename);

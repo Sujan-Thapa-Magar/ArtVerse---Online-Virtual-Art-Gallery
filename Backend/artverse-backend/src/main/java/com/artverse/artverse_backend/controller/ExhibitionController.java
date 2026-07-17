@@ -6,6 +6,7 @@ import com.artverse.artverse_backend.model.Exhibition;
 import com.artverse.artverse_backend.model.User;
 import com.artverse.artverse_backend.repository.UserRepository;
 import com.artverse.artverse_backend.service.ExhibitionService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -33,7 +34,7 @@ public class ExhibitionController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createExhibition(@RequestBody ExhibitionRequest req, Authentication auth) {
+    public ResponseEntity<?> createExhibition(@Valid @RequestBody ExhibitionRequest req, Authentication auth) {
         User artist = currentUser(auth);
 
         Exhibition exhibition = exhibitionService.createExhibition(
@@ -67,7 +68,7 @@ public class ExhibitionController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateExhibition(@PathVariable Long id, @RequestBody ExhibitionRequest req, Authentication auth) {
+    public ResponseEntity<?> updateExhibition(@PathVariable Long id, @Valid @RequestBody ExhibitionRequest req, Authentication auth) {
         User user = currentUser(auth);
         Exhibition exhibition = exhibitionService.getById(id);
         assertOwner(exhibition, user);

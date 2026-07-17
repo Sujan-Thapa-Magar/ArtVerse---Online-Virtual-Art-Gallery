@@ -11,6 +11,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -33,10 +34,46 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+                // ── CSRF ──
+                // CSRF attacks work by riding on credentials the browser attaches
+                // automatically (cookies). This API never uses cookies for auth —
+                // the JWT lives in localStorage and is attached manually as an
+                // Authorization: Bearer header on every request, which a
+                // cross-site page cannot forge (it has no access to another
+                // origin's localStorage, and our CORS policy below rejects
+                // cross-origin requests from anywhere but the app itself
+                // anyway). Spring's synchronizer-token CSRF filter is designed
+                // for cookie/session auth and would just break this stateless
+                // JWT API, so disabling it here is the correct choice, not an
+                // oversight.
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // ── Security response headers ──
+                // X-Content-Type-Options: nosniff and X-Frame-Options: DENY are
+                // already enabled by Spring Security's defaults. We add a
+                // Content-Security-Policy (defense-in-depth against XSS — even
+                // though React escapes rendered output by default) and a
+                // Referrer-Policy on top.
+                .headers(headers -> headers
+                        .contentSecurityPolicy(csp -> csp.policyDirectives(
+                                "default-src 'self'; "
+                                        + "script-src 'self' https://accounts.google.com https://apis.google.com; "
+                                        + "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+                                        + "font-src 'self' https://fonts.gstatic.com data:; "
+                                        + "img-src 'self' data: https:; "
+                                        + "connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com "
+                                        + "https://rc-epay.esewa.com.np https://rc.esewa.com.np https://dev.khalti.com; "
+                                        + "frame-src 'self' https://accounts.google.com; "
+                                        + "form-action 'self' https://rc-epay.esewa.com.np; "
+                                        + "frame-ancestors 'none'; "
+                                        + "base-uri 'self'; "
+                                        + "object-src 'none'"
+                        ))
+                        .referrerPolicy(referrer -> referrer
+                                .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()

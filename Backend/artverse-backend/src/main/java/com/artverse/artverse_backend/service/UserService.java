@@ -5,6 +5,7 @@ import com.artverse.artverse_backend.dto.LoginRequest;
 import com.artverse.artverse_backend.dto.RegisterRequest;
 import com.artverse.artverse_backend.model.User;
 import com.artverse.artverse_backend.repository.UserRepository;
+import com.artverse.artverse_backend.util.InputSanitizer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -32,7 +33,7 @@ public class UserService implements UserDetailsService {
             throw new RuntimeException("Email already registered");
         }
         User user = new User();
-        user.setName(request.getName());
+        user.setName(InputSanitizer.stripHtml(request.getName()));
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(request.getRole());
@@ -62,7 +63,7 @@ public class UserService implements UserDetailsService {
 
         User user = userRepository.findByEmail(googleUser.email()).orElseGet(() -> {
             User u = new User();
-            u.setName(googleUser.name());
+            u.setName(InputSanitizer.stripHtml(googleUser.name()));
             u.setEmail(googleUser.email());
             // Google-authenticated accounts never use a password, but the
             // column is NOT NULL — store a random hash nobody can ever enter.

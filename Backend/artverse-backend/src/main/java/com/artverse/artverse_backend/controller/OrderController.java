@@ -1,7 +1,9 @@
 package com.artverse.artverse_backend.controller;
 
+import com.artverse.artverse_backend.dto.OrderStatusRequest;
 import com.artverse.artverse_backend.model.Order;
 import com.artverse.artverse_backend.service.OrderService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -9,7 +11,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -51,11 +52,10 @@ public class OrderController {
     @PutMapping("/{orderId}/status")
     public ResponseEntity<?> updateOrderStatus(
             @PathVariable Long orderId,
-            @RequestBody Map<String, String> body,
+            @Valid @RequestBody OrderStatusRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
         try {
-            Order.Status newStatus = Order.Status.valueOf(body.get("status"));
-            Order updated = orderService.updateOrderStatus(orderId, userDetails.getUsername(), newStatus);
+            Order updated = orderService.updateOrderStatus(orderId, userDetails.getUsername(), request.getStatus());
             return ResponseEntity.ok(updated);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());

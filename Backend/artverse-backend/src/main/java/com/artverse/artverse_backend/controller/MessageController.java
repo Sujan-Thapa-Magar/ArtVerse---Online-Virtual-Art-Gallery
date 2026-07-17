@@ -1,8 +1,10 @@
 package com.artverse.artverse_backend.controller;
 
+import com.artverse.artverse_backend.dto.MessageRequest;
 import com.artverse.artverse_backend.model.Message;
 import com.artverse.artverse_backend.model.User;
 import com.artverse.artverse_backend.service.MessageService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -21,16 +23,11 @@ public class MessageController {
     @PostMapping("/{receiverId}")
     public ResponseEntity<Message> sendMessage(
             @PathVariable Long receiverId,
-            @RequestBody Map<String, String> body,
+            @Valid @RequestBody MessageRequest request,
             Authentication auth) {
 
-        String content = body.get("content");
-        if (content == null || content.trim().isEmpty()) {
-            return ResponseEntity.badRequest().build();
-        }
-
         Message message = messageService.sendMessage(
-                receiverId, content.trim(), auth.getName());
+                receiverId, request.getContent(), auth.getName());
         return ResponseEntity.ok(message);
     }
 

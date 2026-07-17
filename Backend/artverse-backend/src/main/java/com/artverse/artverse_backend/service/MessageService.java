@@ -4,6 +4,7 @@ import com.artverse.artverse_backend.model.Message;
 import com.artverse.artverse_backend.model.User;
 import com.artverse.artverse_backend.repository.MessageRepository;
 import com.artverse.artverse_backend.repository.UserRepository;
+import com.artverse.artverse_backend.util.InputSanitizer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -30,7 +31,7 @@ public class MessageService {
         Message message = new Message();
         message.setSender(sender);
         message.setReceiver(receiver);
-        message.setContent(content);
+        message.setContent(InputSanitizer.stripHtml(content));
 
         return messageRepository.save(message);
     }

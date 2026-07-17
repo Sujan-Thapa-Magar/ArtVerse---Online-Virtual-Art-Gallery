@@ -2,10 +2,13 @@ package com.artverse.artverse_backend.controller;
 
 import com.artverse.artverse_backend.model.User;
 import com.artverse.artverse_backend.repository.UserRepository;
+import com.artverse.artverse_backend.util.InputSanitizer;
+import jakarta.validation.constraints.Size;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -25,6 +28,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/users")
 @CrossOrigin(origins = "http://localhost:5173")
+@Validated
 public class UserController {
 
     @Autowired
@@ -44,10 +48,10 @@ public class UserController {
 
     @PutMapping("/me")
     public ResponseEntity<?> updateMe(
-            @RequestParam(value = "name", required = false) String name,
-            @RequestParam(value = "bio", required = false) String bio,
+            @RequestParam(value = "name", required = false) @Size(max = 100, message = "Name must be at most 100 characters.") String name,
+            @RequestParam(value = "bio", required = false) @Size(max = 1000, message = "Bio must be at most 1000 characters.") String bio,
             @RequestParam(value = "currentPassword", required = false) String currentPassword,
-            @RequestParam(value = "newPassword", required = false) String newPassword,
+            @RequestParam(value = "newPassword", required = false) @Size(max = 100, message = "Password must be at most 100 characters.") String newPassword,
             @RequestParam(value = "photo", required = false) MultipartFile photo,
             Authentication authentication) {
         try {
@@ -55,10 +59,10 @@ public class UserController {
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
             if (name != null && !name.isBlank()) {
-                user.setName(name);
+                user.setName(InputSanitizer.stripHtml(name));
             }
             if (bio != null) {
-                user.setBio(bio);
+                user.setBio(InputSanitizer.stripHtml(bio));
             }
 
             if (newPassword != null && !newPassword.isBlank()) {
@@ -82,10 +86,7 @@ public class UserController {
                 if (!Files.exists(uploadPath)) {
                     Files.createDirectories(uploadPath);
                 }
-                String originalFilename = photo.getOriginalFilename();
-                String extension = (originalFilename != null && originalFilename.contains("."))
-                        ? originalFilename.substring(originalFilename.lastIndexOf("."))
-                        : "";
+                String extension = InputSanitizer.safeImageExtension(photo.getOriginalFilename());
                 String uniqueFilename = "avatar_" + UUID.randomUUID() + extension;
                 Path filePath = uploadPath.resolve(uniqueFilename);
                 Files.copy(photo.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
