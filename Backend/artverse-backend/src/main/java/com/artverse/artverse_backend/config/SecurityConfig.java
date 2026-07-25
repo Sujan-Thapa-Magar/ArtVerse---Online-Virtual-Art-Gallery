@@ -34,28 +34,10 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // ── CSRF ──
-                // CSRF attacks work by riding on credentials the browser attaches
-                // automatically (cookies). This API never uses cookies for auth —
-                // the JWT lives in localStorage and is attached manually as an
-                // Authorization: Bearer header on every request, which a
-                // cross-site page cannot forge (it has no access to another
-                // origin's localStorage, and our CORS policy below rejects
-                // cross-origin requests from anywhere but the app itself
-                // anyway). Spring's synchronizer-token CSRF filter is designed
-                // for cookie/session auth and would just break this stateless
-                // JWT API, so disabling it here is the correct choice, not an
-                // oversight.
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                // ── Security response headers ──
-                // X-Content-Type-Options: nosniff and X-Frame-Options: DENY are
-                // already enabled by Spring Security's defaults. We add a
-                // Content-Security-Policy (defense-in-depth against XSS — even
-                // though React escapes rendered output by default) and a
-                // Referrer-Policy on top.
                 .headers(headers -> headers
                         .contentSecurityPolicy(csp -> csp.policyDirectives(
                                 "default-src 'self'; "
