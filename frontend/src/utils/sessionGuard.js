@@ -1,6 +1,4 @@
-// Wraps the native fetch so that any expired-token response
-// (401 + {"error": "TOKEN_EXPIRED"}) automatically logs the user out
-// and redirects to login — no matter which component made the call.
+
 
 const originalFetch = window.fetch;
 
