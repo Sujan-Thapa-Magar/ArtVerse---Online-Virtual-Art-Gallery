@@ -60,11 +60,7 @@ export default function ArtworkDetail() {
     navigate("/login");
   };
 
-  // Guards against React 18 Strict Mode's double-invoked effect in dev,
-  // which would otherwise call GET /api/artworks/{id} twice on a single
-  // page load — and since that endpoint increments the view count as a
-  // side effect, the count would jump by 2 instead of 1. Still refetches
-  // normally when the artwork id actually changes (real navigation).
+
   const fetchedIdRef = useRef(null);
 
   useEffect(() => {
@@ -312,34 +308,6 @@ export default function ArtworkDetail() {
     }
   };
 
-  const handleBuyNow = async () => {
-    if (!token) { savePendingAction("buy"); return; }
-    if (orderLoading || orderSuccess) return;
-    setOrderLoading(true);
-    try {
-      const res = await fetch(`http://localhost:8080/api/orders/${id}`, {
-        method: "POST",
-        headers: authHeaders,
-      });
-      if (res.ok) {
-        setOrderSuccess(true);
-        setTimeout(() => navigate("/profile"), 1500);
-      } else {
-        const errText = await res.text();
-        alert(errText || "Failed to place order. Please try again.");
-        // Refresh artwork data in case forSale status changed
-        const refreshed = await fetch(`http://localhost:8080/api/artworks/${id}`, {
-          headers: authHeaders,
-        });
-        if (refreshed.ok) setArtwork(await refreshed.json());
-      }
-    } catch (err) {
-      console.error("Order failed", err);
-      alert("Something went wrong.");
-    } finally {
-      setOrderLoading(false);
-    }
-  };
 
   const handleEdit = async () => {
     if (!token) { navigate("/login"); return; }

@@ -2,9 +2,11 @@ import { jsPDF } from "jspdf";
 
 // ArtVerse brand red — matches the bg-red-600 accent used across the UI.
 const RED = [220, 38, 38];
+const RED_TINT = [254, 242, 242];
 const DARK = [28, 27, 25];
 const GREY = [120, 113, 108];
 const LINE = [231, 229, 228];
+const PANEL = [250, 246, 240];
 
 function formatDate(dateStr) {
   const d = dateStr ? new Date(dateStr) : new Date();
@@ -35,7 +37,7 @@ function loadImageDataUrl(url) {
       fetch(url)
         .then((res) => res.blob())
         .then(blobToDataUrl)
-        .catch(() => null) // fall back gracefully — invoice still renders without the image
+        .catch(() => null) // fall back gracefully — invoice still renders without the logo
     );
   }
   return imageDataUrlCache.get(url);
@@ -50,30 +52,8 @@ function jsPdfImageFormat(dataUrl) {
   return "PNG";
 }
 
-function getImageNaturalSize(dataUrl) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => resolve({ w: img.naturalWidth || 1, h: img.naturalHeight || 1 });
-    img.onerror = () => resolve({ w: 1, h: 1 });
-    img.src = dataUrl;
-  });
-}
-
-// Same convention used across the app (Gallery, ArtworkDetail, etc.) —
-// artwork images are stored as a relative /uploads/... path.
-function resolveArtworkImageUrl(url) {
-  if (!url) return null;
-  return url.startsWith("http") ? url : `http://localhost:8080${url}`;
-}
-
-function fitContain(natW, natH, boxW, boxH) {
-  const scale = Math.min(boxW / natW, boxH / natH);
-  return { w: natW * scale, h: natH * scale };
-}
-
 /**
- * Builds and downloads a one-page PDF invoice for a completed order,
- * including the full details of the artwork that was purchased.
+ * Builds and downloads a one-page PDF invoice for a completed order.
  *
  * @param {object} order - Order returned by the backend (buyNow / payment verify).
  *   Expected shape: { id, buyer, artwork, pricePaid, status, createdAt }
@@ -101,156 +81,140 @@ export async function downloadInvoice(order, paymentMethod = "Direct") {
   doc.text("Nepal's First Virtual Art Gallery", taglineX, y);
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
-  doc.setTextColor(...DARK);
-  doc.text("INVOICE", pageWidth - margin, y - 12, { align: "right" });
+  doc.setFontSize(22);
+  doc.setTextColor(...RED);
+  doc.text("INVOICE", pageWidth - margin, y - 10, { align: "right" });
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   doc.setTextColor(...GREY);
-  doc.text(`Invoice #ORD-${order.id}`, pageWidth - margin, y + 4, { align: "right" });
-  doc.text(formatDate(order.createdAt), pageWidth - margin, y + 18, { align: "right" });
+  doc.text(`#ORD-${order.id}`, pageWidth - margin, y + 6, { align: "right" });
+  doc.text(formatDate(order.createdAt), pageWidth - margin, y + 20, { align: "right" });
 
-  y += 46;
-  doc.setDrawColor(...LINE);
-  doc.setLineWidth(1);
+  y += 50;
+  doc.setDrawColor(...RED);
+  doc.setLineWidth(2);
   doc.line(margin, y, pageWidth - margin, y);
-  y += 28;
+  y += 32;
 
   // ── Billed to / Payment info ──
   const buyerName = order.buyer?.name || order.buyer?.email || "Guest";
   const buyerEmail = order.buyer?.email || "";
+  const statusLabel = String(order.status || "PENDING").replace("_", " ");
+
+  const colWidth = (pageWidth - margin * 2) / 3;
+  const col1X = margin;
+  const col2X = margin + colWidth;
+  const col3X = margin + colWidth * 2;
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
+  doc.setFontSize(8.5);
   doc.setTextColor(...RED);
-  doc.text("BILLED TO", margin, y);
-  doc.text("PAYMENT METHOD", pageWidth / 2, y);
-  doc.text("ORDER STATUS", pageWidth - margin, y, { align: "right" });
+  doc.text("BILLED TO", col1X, y);
+  doc.text("PAYMENT METHOD", col2X, y);
+  doc.text("ORDER STATUS", col3X, y);
 
   y += 16;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11.5);
   doc.setTextColor(...DARK);
-  doc.text(buyerName, margin, y);
-  doc.text(paymentMethod, pageWidth / 2, y);
-  doc.text(String(order.status || "PENDING").replace("_", " "), pageWidth - margin, y, { align: "right" });
+  doc.text(buyerName, col1X, y);
+  doc.text(paymentMethod, col2X, y);
+  doc.text(statusLabel, col3X, y);
 
   if (buyerEmail) {
-    y += 14;
-    doc.setFontSize(10);
+    y += 15;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9.5);
     doc.setTextColor(...GREY);
-    doc.text(buyerEmail, margin, y);
+    doc.text(buyerEmail, col1X, y);
   }
 
-  y += 30;
+  y += 34;
+  doc.setDrawColor(...LINE);
+  doc.setLineWidth(1);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 26;
 
-  // ── Artwork details ──
+  // ── Artwork / line item ──
   const artwork = order.artwork || {};
   const artistName = artwork.artist?.name || artwork.artist?.email || "Unknown Artist";
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.setTextColor(...RED);
-  doc.text("ARTWORK DETAILS", margin, y);
-  y += 12;
+  doc.setFontSize(8.5);
+  doc.setTextColor(...GREY);
+  doc.text("ITEM", margin, y);
+  doc.text("PRICE", pageWidth - margin, y, { align: "right" });
+  y += 10;
+  doc.setDrawColor(...LINE);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 4;
 
-  const boxTop = y;
-  const boxInnerPad = 14;
-  const thumbSize = 100;
-  const hasImage = !!artwork.imageUrl;
-  const textX = margin + boxInnerPad + (hasImage ? thumbSize + 16 : 0);
-  const textWidth = pageWidth - margin - boxInnerPad - textX;
-
-  // Details shown as "Label: Value" pairs, only for fields that exist.
+  // Panel background for the single line item — a clean card instead of a photo.
   const metaParts = [
-    artwork.category && `Category: ${artwork.category}`,
-    artwork.medium && `Medium: ${artwork.medium}`,
-    artwork.dimensions && `Dimensions: ${artwork.dimensions}`,
+    artwork.category && artwork.category,
+    artwork.medium && artwork.medium,
+    artwork.dimensions && artwork.dimensions,
   ].filter(Boolean);
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9.5);
-  const descriptionLines = artwork.description
-    ? doc.splitTextToSize(artwork.description, textWidth).slice(0, 4)
-    : [];
+  const titleH = 20;
+  const artistH = 16;
+  const metaH = metaParts.length ? 16 : 0;
+  const panelPadY = 18;
+  const panelHeight = panelPadY * 2 + titleH + artistH + metaH;
+  const panelTop = y;
 
-  // Work out the box height from its tallest column (image vs. text) before drawing.
-  const titleH = 18;
-  const artistH = 14;
-  const metaH = metaParts.length ? 14 : 0;
-  const descGapH = descriptionLines.length ? 10 : 0;
-  const descH = descriptionLines.length * 12;
-  const refH = 14;
-  const textBlockHeight = titleH + artistH + metaH + descGapH + descH + refH;
-  const boxHeight = Math.max(hasImage ? thumbSize : 0, textBlockHeight) + boxInnerPad * 2;
+  doc.setFillColor(...PANEL);
+  doc.roundedRect(margin, panelTop, pageWidth - margin * 2, panelHeight, 6, 6, "F");
+  // Accent bar on the left edge of the panel.
+  doc.setFillColor(...RED);
+  doc.roundedRect(margin, panelTop, 4, panelHeight, 2, 2, "F");
 
-  doc.setDrawColor(...LINE);
-  doc.rect(margin, boxTop, pageWidth - margin * 2, boxHeight);
+  let ty = panelTop + panelPadY + 12;
+  const textX = margin + 22;
 
-  // Thumbnail, aspect-fit within its square slot.
-  if (hasImage) {
-    const artworkImgUrl = resolveArtworkImageUrl(artwork.imageUrl);
-    const artworkDataUrl = await loadImageDataUrl(artworkImgUrl);
-    if (artworkDataUrl) {
-      try {
-        const { w: natW, h: natH } = await getImageNaturalSize(artworkDataUrl);
-        const { w: drawW, h: drawH } = fitContain(natW, natH, thumbSize, thumbSize);
-        const imgX = margin + boxInnerPad + (thumbSize - drawW) / 2;
-        const imgY = boxTop + boxInnerPad + (thumbSize - drawH) / 2;
-        doc.addImage(artworkDataUrl, jsPdfImageFormat(artworkDataUrl), imgX, imgY, drawW, drawH);
-      } catch {
-        // Corrupt/unsupported image format — skip it, the text details still render.
-      }
-    }
-  }
-
-  // Text column.
-  let ty = boxTop + boxInnerPad + 11;
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
+  doc.setFontSize(14);
   doc.setTextColor(...DARK);
   doc.text(artwork.title || "Untitled artwork", textX, ty);
-  ty += artistH;
 
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.setTextColor(...RED);
+  doc.text(formatNpr(artwork.price ?? order.pricePaid), pageWidth - margin - 16, ty, { align: "right" });
+
+  ty += artistH;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   doc.setTextColor(...GREY);
   doc.text(`By ${artistName}`, textX, ty);
-  ty += metaH || 4;
 
   if (metaParts.length) {
+    ty += metaH;
     doc.setFontSize(9);
-    doc.setTextColor(...DARK);
-    doc.text(metaParts.join("   ·   "), textX, ty);
-    ty += descGapH || 14;
-  }
-
-  if (descriptionLines.length) {
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9.5);
     doc.setTextColor(...GREY);
-    doc.text(descriptionLines, textX, ty);
-    ty += descH;
+    doc.text(metaParts.join("   ·   "), textX, ty);
   }
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.setTextColor(...RED);
-  doc.text(`Artwork Ref: #${artwork.id ?? "—"}   ·   Price: ${formatNpr(artwork.price ?? order.pricePaid)}`, textX, ty + 8);
-
-  y = boxTop + boxHeight + 28;
+  y = panelTop + panelHeight + 34;
 
   // ── Total ──
   doc.setDrawColor(...LINE);
   doc.line(margin, y, pageWidth - margin, y);
-  y += 24;
+  y += 8;
+
+  const totalBoxWidth = 220;
+  const totalBoxHeight = 46;
+  const totalBoxX = pageWidth - margin - totalBoxWidth;
+  doc.setFillColor(...RED_TINT);
+  doc.roundedRect(totalBoxX, y, totalBoxWidth, totalBoxHeight, 6, 6, "F");
+
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
+  doc.setFontSize(10);
   doc.setTextColor(...GREY);
-  doc.text("TOTAL PAID", margin, y);
-  doc.setFontSize(16);
+  doc.text("TOTAL PAID", totalBoxX + 16, y + 28);
+  doc.setFontSize(18);
   doc.setTextColor(...RED);
-  doc.text(formatNpr(order.pricePaid), pageWidth - margin, y, { align: "right" });
+  doc.text(formatNpr(order.pricePaid), totalBoxX + totalBoxWidth - 16, y + 30, { align: "right" });
 
   // ── Footer ──
   const footerY = doc.internal.pageSize.getHeight() - 64;

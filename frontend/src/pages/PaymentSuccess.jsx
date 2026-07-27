@@ -3,12 +3,6 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { downloadInvoice } from "../utils/generateInvoice";
 
-/**
- * eSewa redirects the browser here after a successful payment, appending a
- * base64-encoded `data` query param. We pull the transaction_uuid out of it
- * (falling back to what we stashed before redirecting), then ask the backend
- * to verify the payment with eSewa and place the order.
- */
 export default function PaymentSuccess() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -18,10 +12,7 @@ export default function PaymentSuccess() {
   const verifyStarted = useRef(false);
 
   useEffect(() => {
-    // Guards against StrictMode's double effect-invocation in dev (and any
-    // accidental re-run) actually firing the verify call twice — a second
-    // buyNow would hit "artwork no longer for sale" and could race the first
-    // request's success response back to the UI as a false "Verification failed".
+
     if (verifyStarted.current) return;
     verifyStarted.current = true;
 

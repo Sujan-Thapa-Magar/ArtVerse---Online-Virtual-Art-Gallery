@@ -18,8 +18,6 @@ export default function VirtualExhibition() {
   const [likeLoading, setLikeLoading] = useState(false);
   const [showCurator, setShowCurator] = useState(false);
   const [visible, setVisible]         = useState(true);
-  const [buying, setBuying]           = useState(false);
-  const [buyMsg, setBuyMsg]           = useState(null);
 
   const token = localStorage.getItem("token");
 
@@ -66,7 +64,6 @@ export default function VirtualExhibition() {
   function goTo(idx) {
     if (idx === current || artworks.length === 0) return;
     setVisible(false);
-    setBuyMsg(null);
     setTimeout(() => { setCurrent(idx); setVisible(true); }, 220);
   }
 
@@ -98,27 +95,6 @@ export default function VirtualExhibition() {
     }
   }
 
-  async function handleBuyNow() {
-    if (buying || !art) return;
-    setBuying(true);
-    setBuyMsg(null);
-    try {
-      const res = await fetch(`http://localhost:8080/api/orders/${art.id}`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(txt || "Order failed");
-      }
-      setBuyMsg({ type: "success", text: "Order placed! Redirecting to your profile..." });
-      setTimeout(() => navigate("/profile"), 2000);
-    } catch (err) {
-      setBuyMsg({ type: "error", text: err.message });
-    } finally {
-      setBuying(false);
-    }
-  }
 
   const C = {
     pageBg:      "#faf6f0",   
@@ -250,7 +226,6 @@ export default function VirtualExhibition() {
               <div style={{ fontSize: 14, color: C.textMid, fontWeight: 700, letterSpacing: "0.5px" }}>NOT FOR ACQUISITION</div>
             </div>
           )}
-          {buyMsg && <div style={{ fontSize: 12, marginTop: 4, fontWeight: 700, color: buyMsg.type === "success" ? "#16a34a" : C.accent }}>{buyMsg.text}</div>}
         </div>
 
         {/* Action Controls - Bold dark borders with interactive feedback */}
@@ -269,13 +244,13 @@ export default function VirtualExhibition() {
             ↗
           </button>
 
-          {/* Secure purchase acquire button */}
+          {/* Acquire → artwork detail page, where payment (eSewa/Khalti) is actually verified before an order is created */}
           {art.forSale && (
-            <button onClick={handleBuyNow} disabled={buying}
+            <button onClick={() => navigate(`/artwork/${art.id}`)}
               style={{ padding: "0 28px", height: 46, background: C.accent, border: "none", borderRadius: 10, color: "#fff", fontSize: 11, fontWeight: 800, letterSpacing: "1.5px", cursor: "pointer", transition: "all 0.2s" }}
               onMouseEnter={e => e.currentTarget.style.background = C.accentHover}
               onMouseLeave={e => e.currentTarget.style.background = C.accent}>
-              {buying ? "BUYING..." : "ACQUIRE"}
+              ACQUIRE
             </button>
           )}
         </div>

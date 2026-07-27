@@ -3,12 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { downloadInvoice } from "../utils/generateInvoice";
 
-/**
- * Khalti redirects the browser here after checkout (success, pending, or
- * cancelled — there's a single return_url) with pidx, status and
- * purchase_order_id as query params. We never trust `status` from the URL —
- * the backend re-checks it against Khalti's lookup API before placing the order.
- */
+
 export default function PaymentKhaltiCallback() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -18,10 +13,7 @@ export default function PaymentKhaltiCallback() {
   const verifyStarted = useRef(false);
 
   useEffect(() => {
-    // Guards against StrictMode's double effect-invocation in dev (and any
-    // accidental re-run) actually firing the verify call twice — a second
-    // buyNow would hit "artwork no longer for sale" and could race the first
-    // request's success response back to the UI as a false "Verification failed".
+
     if (verifyStarted.current) return;
     verifyStarted.current = true;
 

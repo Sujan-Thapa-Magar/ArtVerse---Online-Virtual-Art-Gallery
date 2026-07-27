@@ -17,6 +17,7 @@ import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentFailure from "./pages/PaymentFailure";
 import PaymentKhaltiCallback from "./pages/PaymentKhaltiCallback";
 import About from "./pages/AboutUs";
+import ContactUs from "./pages/ContactUs";
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
           <Route path="/home" element={<Home />} />
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/about-us" element={< About/>} />
+          <Route path="/contact-us" element={<ContactUs />} />
           <Route path="/artwork/:id" element={<ArtworkDetail />} />
           <Route path="/exhibition/:id" element={<VirtualExhibition />} />
 

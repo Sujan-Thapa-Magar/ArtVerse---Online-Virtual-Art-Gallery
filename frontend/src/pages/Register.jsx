@@ -4,10 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { loadGoogleIdentityScript } from "../utils/loadGoogleIdentityScript";
 
-// Create your own OAuth 2.0 Client ID (Web application) at
-// https://console.cloud.google.com/apis/credentials, add http://localhost:5173
-// as an Authorized JavaScript origin, then paste it here AND into
-// google.client-id in Backend/artverse-backend/src/main/resources/application.properties.
+
 const GOOGLE_CLIENT_ID = "879111825472-tqj2cn0lsjc2gbk4gscdkqbfml5e2f7a.apps.googleusercontent.com";
 
 function decodeJwtPayload(token) {
@@ -30,7 +27,6 @@ export default function Register() {
   const [loginData, setLoginData] = useState({ email: "", password: "" });
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
-  const [photoPreview, setPhotoPreview] = useState(null);
   const [idPreview, setIdPreview] = useState(null);
   const [idFile, setIdFile] = useState(null);
   const googleInitialized = useRef(false);
@@ -50,11 +46,6 @@ export default function Register() {
 
   const handleLoginChange = (e) => {
     setLoginData({ ...loginData, [e.target.name]: e.target.value });
-  };
-
-  const handlePhoto = (e) => {
-    const file = e.target.files[0];
-    if (file) setPhotoPreview(URL.createObjectURL(file));
   };
 
   const handleIdUpload = (e) => {
@@ -261,24 +252,6 @@ export default function Register() {
 
             {activeTab === "register" ? (
               <form onSubmit={handleRegister}>
-
-                {/* Profile Photo Upload */}
-                <div className="flex flex-col items-center mb-4">
-                  <label htmlFor="photo-upload" className="cursor-pointer">
-                    <div className="w-14 h-14 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center relative bg-gray-50 overflow-hidden">
-                      {photoPreview ? (
-                        <img src={photoPreview} alt="preview" className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-lg text-gray-300">📷</span>
-                      )}
-                      <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-gray-700 text-white text-[10px] flex items-center justify-center">
-                        ✎
-                      </div>
-                    </div>
-                  </label>
-                  <input id="photo-upload" type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
-                  <span className="text-[10px] tracking-widest text-gray-300 mt-1.5">UPLOAD PROFILE PHOTO</span>
-                </div>
 
                 {/* Full Name */}
                 <div className="mb-3">

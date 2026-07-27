@@ -22,32 +22,28 @@ function formatTime(dateStr) {
   return date.toLocaleDateString();
 }
 
-// ── Design tokens updated to match your gallery/profile palette ──────────────────
 const C = {
-  pageBg:      "#faf6f0",   // slate-50 (consistent with your gallery/home pages)
+  pageBg:      "#faf6f0",   
   sidebar:     "#ffffff",
-  sidebarBorder:"#e7e5e4",   // stone-200 border accent
-  windowBg:    "#faf6f0",   // stone-50 background look
+  sidebarBorder:"#e7e5e4",   
+  windowBg:    "#faf6f0",   
   headerBg:    "#ffffff",
-  border:      "#e7e5e4",   // stone-200 split lines
-  text:        "#1c1917",   // stone-900 typography
-  textMid:     "#78716c",   // stone-500
-  textLight:   "#a8a29e",   // stone-400
-  accent:      "#dc2626",   // YOUR SIGNATURE RED ACCENT
-  accentHover: "#b91c1c",   // deep red hover state
-  accentBg:    "#fef2f2",   // soft red tint background
-  myBubble:    "#dc2626",   // active red message bubbles
+  border:      "#e7e5e4",   
+  text:        "#1c1917",   
+  textMid:     "#78716c",   
+  textLight:   "#a8a29e",   
+  accent:      "#dc2626",  
+  accentHover: "#b91c1c",   
+  accentBg:    "#fef2f2",   
+  myBubble:    "#dc2626",   
   myBubbleText:"#ffffff",
   theirBubble: "#ffffff",
   theirBubbleText: "#1c1917",
-  inputBg:     "#faf6f0",   // input matching slate background
-  activeItem:  "#fef2f2",   // soft red item highlight background
+  inputBg:     "#faf6f0",   
+  activeItem:  "#fef2f2",  
 };
 
-// Avatar circle matching the app's brand gradient — shows the user's photo
-// when they have one, falling back to their initial. Declared at module
-// scope (not inside Chat()) so its identity — and imgError state — stays
-// stable across re-renders, e.g. every 5s message poll.
+
 function Avatar({ name, photo, size = 42 }) {
   const [imgError, setImgError] = useState(false);
   const src = photo ? (photo.startsWith("http") ? photo : `${API}/${photo}`) : null;

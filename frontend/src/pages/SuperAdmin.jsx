@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, LabelList } from "recharts";
 import Navbar from "../components/Navbar";
+import Avatar from "../components/Avatar";
 
 const API = "http://localhost:8080";
 function getToken() { return localStorage.getItem("token"); }
@@ -28,6 +30,74 @@ const statusCfg = {
   DELIVERED:  { bg: "#f0fdf4", color: "#16a34a", label: "Delivered" },
 };
 
+const ROLE_COLORS = { BUYER: "#3b82f6", ARTIST: "#dc2626", ADMIN: "#8b5cf6" };
+
+function computeRoleBreakdown(users) {
+  const counts = { BUYER: 0, ARTIST: 0, ADMIN: 0 };
+  users.forEach((u) => { if (counts[u.role] !== undefined) counts[u.role] += 1; });
+  return Object.entries(counts)
+    .filter(([, value]) => value > 0)
+    .map(([name, value]) => ({ name, value }));
+}
+
+function RolePieTooltip({ active, payload }) {
+  if (!active || !payload || !payload.length) return null;
+  const p = payload[0];
+  return (
+    <div style={{ background: "#fff", border: "1px solid #ede9e3", borderRadius: 8, boxShadow: "0 2px 12px rgba(0,0,0,0.08)", padding: "6px 10px", fontSize: 12, fontWeight: 600, color: "#1c1917" }}>
+      {p.name}: {p.value}
+    </div>
+  );
+}
+
+const STATUS_COLORS = { PENDING: "#78716c", IN_TRANSIT: "#f59e0b", DELIVERED: "#16a34a" };
+
+function computeOrderStatusBreakdown(orders) {
+  const counts = { PENDING: 0, IN_TRANSIT: 0, DELIVERED: 0 };
+  orders.forEach((o) => { if (counts[o.status] !== undefined) counts[o.status] += 1; });
+  return Object.entries(counts)
+    .filter(([, value]) => value > 0)
+    .map(([name, value]) => ({ name, value }));
+}
+
+function computeRevenueTrend(orders) {
+  const now = new Date();
+  const buckets = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    buckets.push({
+      key: `${d.getFullYear()}-${d.getMonth()}`,
+      label: d.toLocaleString("en-US", { month: "short" }).toUpperCase(),
+      revenue: 0,
+      orders: 0,
+    });
+  }
+  const byKey = Object.fromEntries(buckets.map((b) => [b.key, b]));
+  orders.forEach((o) => {
+    if (!o.createdAt) return;
+    const d = new Date(o.createdAt);
+    const bucket = byKey[`${d.getFullYear()}-${d.getMonth()}`];
+    if (bucket) {
+      bucket.orders += 1;
+      bucket.revenue += Number(o.pricePaid || 0);
+    }
+  });
+  return buckets;
+}
+
+function RevenueTooltip({ active, payload, label }) {
+  if (!active || !payload || !payload.length) return null;
+  const revenue = payload.find((p) => p.dataKey === "revenue");
+  const ordersCount = payload.find((p) => p.dataKey === "orders");
+  return (
+    <div style={{ background: "#fff", border: "1px solid #ede9e3", borderRadius: 8, boxShadow: "0 2px 12px rgba(0,0,0,0.08)", padding: "8px 12px", fontSize: 12 }}>
+      <p style={{ fontWeight: 700, color: "#1c1917", margin: "0 0 4px" }}>{label}</p>
+      {revenue && <p style={{ margin: 0, color: "#dc2626", fontWeight: 600 }}>Revenue: Rs. {revenue.value.toLocaleString()}</p>}
+      {ordersCount && <p style={{ margin: 0, color: "#78716c" }}>Orders: {ordersCount.value}</p>}
+    </div>
+  );
+}
+
 export default function SuperAdmin() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab]     = useState("Dashboard");
@@ -37,6 +107,7 @@ export default function SuperAdmin() {
   const [loading, setLoading]         = useState(true);
   const [viewingId, setViewingId]     = useState(null);
   const [editingUser, setEditingUser] = useState(null);
+  const [userSearch, setUserSearch]   = useState("");
   const [editForm, setEditForm]       = useState({ name: "", email: "", bio: "", password: "" });
 
   const token   = getToken();
@@ -76,6 +147,11 @@ export default function SuperAdmin() {
     if (res.ok) setUsers(p => p.map(u => u.id === id ? { ...u, isVerified: verified } : u));
   }
 
+  function revokeArtist(id, name) {
+    if (!confirm(`Revoke verification for ${name}? They will lose their verified artist badge.`)) return;
+    verifyArtist(id, false);
+  }
+
   async function updateOrderStatus(id, status) {
     const res = await fetch(`${API}/api/admin/orders/${id}/status`, { method: "PUT", headers, body: JSON.stringify({ status }) });
     if (res.ok) setOrders(p => p.map(o => o.id === id ? { ...o, status } : o));
@@ -99,6 +175,20 @@ export default function SuperAdmin() {
 
   const artists           = users.filter(u => u.role === "ARTIST");
   const unverifiedArtists = artists.filter(a => !a.isVerified);
+  const roleData          = computeRoleBreakdown(users);
+  const orderStatusData   = computeOrderStatusBreakdown(orders);
+  const revenueTrend      = computeRevenueTrend(orders);
+
+  const totalRevenue   = orders.reduce((sum, o) => sum + Number(o.pricePaid || 0), 0);
+  const avgOrderValue  = orders.length ? totalRevenue / orders.length : 0;
+  const pendingOrders  = orders.filter(o => o.status === "PENDING").length;
+  const deliveredOrders = orders.filter(o => o.status === "DELIVERED").length;
+
+  const filteredUsers = userSearch.trim()
+    ? users.filter(u =>
+        (u.name || "").toLowerCase().includes(userSearch.toLowerCase()) ||
+        (u.email || "").toLowerCase().includes(userSearch.toLowerCase()))
+    : users;
 
   const tabs = [
     { key: "Dashboard", icon: "📊" },
@@ -181,20 +271,9 @@ export default function SuperAdmin() {
       {/* ── Main ── */}
       <div style={{ flex: 1, overflowY: "auto" }}>
 
-        {/* Top bar */}
-        {/* <div style={{ background: C.white, borderBottom: `1px solid ${C.border}`, padding: "0 32px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 64, zIndex: 40, boxShadow: "0 1px 6px rgba(0,0,0,0.04)" }}>
-       
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            {unverifiedArtists.length > 0 && (
-              <span style={{ background: "#fef3c7", color: "#b45309", fontSize: 11, fontWeight: 600, padding: "5px 12px", borderRadius: 20, border: "1px solid #fde68a" }}>
-                ⚠️ {unverifiedArtists.length} pending
-              </span>
-            )}
-            <div style={{ width: 34, height: 34, borderRadius: "50%", background: `linear-gradient(135deg, ${C.accent}, #ef4444)`, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700 }}>A</div>
-          </div>
-        </div> */}
 
-        <div style={{ padding: "28px 32px", maxWidth: 1200 }}>
+
+        <div style={{ padding: "28px 40px", width: "100%", boxSizing: "border-box" }}>
 
           {/* ── Edit Modal ── */}
           {editingUser && (
@@ -259,19 +338,140 @@ export default function SuperAdmin() {
               </div>
 
               {/* Stat cards */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 24 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 16, marginBottom: 24 }}>
                 {[
-                  { label: "Total Users",   value: stats.totalUsers   || 0, icon: "👥", accent: "#3b82f6", bg: "#eff6ff" },
-                  { label: "Total Artists", value: stats.totalArtists || 0, icon: "🎨", accent: C.accent,  bg: C.accentBg },
-                  { label: "Total Buyers",  value: stats.totalBuyers  || 0, icon: "🛍", accent: "#8b5cf6", bg: "#f5f3ff" },
-                  { label: "Total Orders",  value: stats.totalOrders  || 0, icon: "🛒", accent: "#16a34a", bg: "#f0fdf4" },
+                  { label: "Total Users",    value: stats.totalUsers   || 0, icon: "👥", accent: "#3b82f6", bg: "#eff6ff" },
+                  { label: "Total Artists",  value: stats.totalArtists || 0, icon: "🎨", accent: C.accent,  bg: C.accentBg },
+                  { label: "Total Buyers",   value: stats.totalBuyers  || 0, icon: "🛍", accent: "#8b5cf6", bg: "#f5f3ff" },
+                  { label: "Total Orders",   value: stats.totalOrders  || 0, icon: "🛒", accent: "#16a34a", bg: "#f0fdf4" },
+                  { label: "Total Revenue",  value: loading ? 0 : `Rs. ${totalRevenue.toLocaleString()}`, icon: "💰", accent: "#f59e0b", bg: "#fffbeb" },
+                  { label: "Avg Order Value", value: loading ? 0 : `Rs. ${Math.round(avgOrderValue).toLocaleString()}`, icon: "📈", accent: "#0891b2", bg: "#ecfeff" },
                 ].map(s => (
                   <div key={s.label} style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 14, padding: "20px 20px 18px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)", borderTop: `3px solid ${s.accent}` }}>
                     <div style={{ width: 40, height: 40, borderRadius: 10, background: s.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 14 }}>{s.icon}</div>
-                    <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 38, fontWeight: 700, color: C.text, lineHeight: 1 }}>{loading ? "—" : s.value}</div>
+                    <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 28, fontWeight: 700, color: C.text, lineHeight: 1 }}>{loading ? "—" : s.value}</div>
                     <div style={{ fontSize: 11, color: C.textLight, letterSpacing: "1px", textTransform: "uppercase", marginTop: 6 }}>{s.label}</div>
                   </div>
                 ))}
+              </div>
+
+              {/* Role breakdown + Order status + Recent orders */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 24 }}>
+
+                {/* Role breakdown donut */}
+                <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}>
+                  <h3 style={{ fontSize: 14, fontWeight: 600, color: C.text, margin: "0 0 12px" }}>User Role Breakdown</h3>
+                  {loading || roleData.length === 0 ? (
+                    <div style={{ height: 170, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: C.textLight }}>
+                      {loading ? "Loading…" : "No users yet."}
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+                      <ResponsiveContainer width="100%" height={150}>
+                        <PieChart>
+                          <Pie data={roleData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={38} outerRadius={64} paddingAngle={2} stroke="none">
+                            {roleData.map((r) => <Cell key={r.name} fill={ROLE_COLORS[r.name]} />)}
+                          </Pie>
+                          <Tooltip content={<RolePieTooltip />} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 6 }}>
+                        {roleData.map((r) => (
+                          <div key={r.name} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ width: 10, height: 10, borderRadius: "50%", background: ROLE_COLORS[r.name], flexShrink: 0 }} />
+                            <span style={{ fontSize: 12, color: C.textMid, flex: 1 }}>{r.name}</span>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: C.text }}>{r.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Order status donut */}
+                <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}>
+                  <h3 style={{ fontSize: 14, fontWeight: 600, color: C.text, margin: "0 0 12px" }}>Order Status Breakdown</h3>
+                  {loading || orderStatusData.length === 0 ? (
+                    <div style={{ height: 170, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: C.textLight }}>
+                      {loading ? "Loading…" : "No orders yet."}
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+                      <ResponsiveContainer width="100%" height={150}>
+                        <PieChart>
+                          <Pie data={orderStatusData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={38} outerRadius={64} paddingAngle={2} stroke="none">
+                            {orderStatusData.map((r) => <Cell key={r.name} fill={STATUS_COLORS[r.name]} />)}
+                          </Pie>
+                          <Tooltip content={<RolePieTooltip />} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 6 }}>
+                        {orderStatusData.map((r) => (
+                          <div key={r.name} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ width: 10, height: 10, borderRadius: "50%", background: STATUS_COLORS[r.name], flexShrink: 0 }} />
+                            <span style={{ fontSize: 12, color: C.textMid, flex: 1 }}>{(statusCfg[r.name] || {}).label || r.name}</span>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: C.text }}>{r.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Recent orders preview */}
+                <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                    <h3 style={{ fontSize: 14, fontWeight: 600, color: C.text, margin: 0 }}>Recent Orders</h3>
+                    <button onClick={() => setActiveTab("Orders")} style={{ background: "none", border: "none", fontSize: 11, fontWeight: 700, color: C.accent, cursor: "pointer" }}>View all →</button>
+                  </div>
+                  {loading || orders.length === 0 ? (
+                    <div style={{ height: 170, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: C.textLight }}>
+                      {loading ? "Loading…" : "No orders yet."}
+                    </div>
+                  ) : (
+                    [...orders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 4).map((o) => {
+                      const s = statusCfg[o.status] || statusCfg.PENDING;
+                      return (
+                        <div key={o.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${C.border}` }}>
+                          <div style={{ minWidth: 0 }}>
+                            <p style={{ fontSize: 12, fontWeight: 600, color: C.text, margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{o.artwork?.title || "—"}</p>
+                            <p style={{ fontSize: 11, color: C.textLight, margin: "2px 0 0" }}>{o.buyer?.name || "—"}</p>
+                          </div>
+                          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.5px", textTransform: "uppercase", padding: "3px 8px", borderRadius: 20, background: s.bg, color: s.color, flexShrink: 0, marginLeft: 8 }}>
+                            {s.label}
+                          </span>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              {/* Revenue trend chart */}
+              <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, boxShadow: "0 1px 6px rgba(0,0,0,0.05)", marginBottom: 24 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                  <div>
+                    <h3 style={{ fontSize: 14, fontWeight: 600, color: C.text, margin: 0 }}>Revenue &amp; Orders Trend</h3>
+                    <p style={{ fontSize: 12, color: C.textLight, margin: "2px 0 0" }}>Last 6 months</p>
+                  </div>
+                </div>
+                {loading || revenueTrend.every(b => b.revenue === 0 && b.orders === 0) ? (
+                  <div style={{ height: 220, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: C.textLight }}>
+                    {loading ? "Loading…" : "No order activity in the last 6 months yet."}
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height={240}>
+                    <BarChart data={revenueTrend} margin={{ top: 20, right: 8, left: 8, bottom: 0 }}>
+                      <CartesianGrid vertical={false} stroke="#f3f4f6" />
+                      <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: "#a8a29e", letterSpacing: 1 }} />
+                      <YAxis axisLine={false} tickLine={false} allowDecimals={false} tick={{ fontSize: 11, fill: "#a8a29e" }} width={36} />
+                      <Tooltip content={<RevenueTooltip />} cursor={{ fill: "#faf6f0" }} />
+                      <Bar dataKey="revenue" fill={C.accent} radius={[3, 3, 0, 0]} maxBarSize={28} fillOpacity={0.85}>
+                        <LabelList dataKey="revenue" position="top" formatter={(v) => (v > 0 ? `Rs.${v.toLocaleString()}` : "")} style={{ fontSize: 9, fontWeight: 700, fill: C.accent }} />
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
               </div>
 
               {/* Alert */}
@@ -287,21 +487,58 @@ export default function SuperAdmin() {
           {/* ── Users Tab ── */}
           {activeTab === "Users" && (
             <div>
-              <div style={{ marginBottom: 24 }}>
-                <p style={{ fontSize: 10, color: C.accent, fontWeight: 700, letterSpacing: "3px", textTransform: "uppercase", margin: "0 0 6px" }}>Management</p>
-                <h1 style={{ fontFamily: "'Roboto', sans-serif", fontSize: 34, fontWeight: 600, color: C.text, margin: 0 }}>All Users</h1>
-                <p style={{ fontSize: 12, color: C.textLight, margin: "4px 0 0" }}>{users.length} total users on the platform</p>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 24, gap: 16, flexWrap: "wrap" }}>
+                <div>
+                  <p style={{ fontSize: 10, color: C.accent, fontWeight: 700, letterSpacing: "3px", textTransform: "uppercase", margin: "0 0 6px" }}>Management</p>
+                  <h1 style={{ fontFamily: "'Roboto', sans-serif", fontSize: 34, fontWeight: 600, color: C.text, margin: 0 }}>All Users</h1>
+                  <p style={{ fontSize: 12, color: C.textLight, margin: "4px 0 0" }}>
+                    {filteredUsers.length === users.length ? `${users.length} total users on the platform` : `${filteredUsers.length} of ${users.length} users`}
+                  </p>
+                </div>
+                <input
+                  type="text"
+                  value={userSearch}
+                  onChange={e => setUserSearch(e.target.value)}
+                  placeholder="Search by name or email…"
+                  style={{ padding: "10px 14px", border: `1.5px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "'Roboto', sans-serif", color: C.text, outline: "none", width: 260, background: C.white }}
+                  onFocus={e => e.target.style.borderColor = C.accent}
+                  onBlur={e => e.target.style.borderColor = C.border}
+                />
               </div>
+
+              {/* Stat cards */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 16, marginBottom: 24 }}>
+                {[
+                  { label: "Total Users",   value: users.length, icon: "👥", accent: "#3b82f6", bg: "#eff6ff" },
+                  { label: "Artists",       value: artists.length, icon: "🎨", accent: C.accent,  bg: C.accentBg },
+                  { label: "Buyers",        value: users.filter(u => u.role === "BUYER").length, icon: "🛍", accent: "#8b5cf6", bg: "#f5f3ff" },
+                  { label: "Admins",        value: users.filter(u => u.role === "ADMIN").length, icon: "⚙️", accent: "#0891b2", bg: "#ecfeff" },
+                ].map(s => (
+                  <div key={s.label} style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 14, padding: "20px 20px 18px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)", borderTop: `3px solid ${s.accent}` }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 10, background: s.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 14 }}>{s.icon}</div>
+                    <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 28, fontWeight: 700, color: C.text, lineHeight: 1 }}>{loading ? "—" : s.value}</div>
+                    <div style={{ fontSize: 11, color: C.textLight, letterSpacing: "1px", textTransform: "uppercase", marginTop: 6 }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+
               <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "auto", boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                   <thead>
-                    <tr>{["ID","Name","Email","Role","Verified","Joined","Actions"].map(h => <th key={h} style={th}>{h}</th>)}</tr>
+                    <tr>{["ID","User","Email","Role","Verified","Joined","Actions"].map(h => <th key={h} style={th}>{h}</th>)}</tr>
                   </thead>
                   <tbody>
-                    {users.map(user => (
+                    {filteredUsers.length === 0 ? (
+                      <tr><td colSpan={7} style={{ ...td, textAlign: "center", color: C.textLight, padding: "28px 16px" }}>No users match "{userSearch}".</td></tr>
+                    ) : filteredUsers.map(user => (
                       <tr key={user.id}>
                         <td style={{ ...td, color: C.textLight, fontSize: 11 }}>#{user.id}</td>
-                        <td style={{ ...td, fontWeight: 600 }}>{user.name}</td>
+                        <td style={td}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <Avatar name={user.name} email={user.email} photo={user.profilePhoto} size={32} bgColor="#1c1917" />
+                            <span style={{ fontWeight: 600 }}>{user.name}</span>
+                          </div>
+                        </td>
                         <td style={{ ...td, color: C.textMid }}>{user.email}</td>
                         <td style={td}>
                           <select value={user.role} onChange={e => changeRole(user.id, e.target.value)}
@@ -337,16 +574,37 @@ export default function SuperAdmin() {
                 <h1 style={{ fontFamily: "'Roboto', sans-serif", fontSize: 34, fontWeight: 600, color: C.text, margin: 0 }}>Artist Verification</h1>
                 <p style={{ fontSize: 12, color: C.textLight, margin: "4px 0 0" }}>{artists.length} artists — {unverifiedArtists.length} pending</p>
               </div>
+
+              {/* Stat cards */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 16, marginBottom: 24 }}>
+                {[
+                  { label: "Total Artists",    value: artists.length, icon: "🎨", accent: C.accent,  bg: C.accentBg },
+                  { label: "Verified",         value: artists.length - unverifiedArtists.length, icon: "✓", accent: "#16a34a", bg: "#f0fdf4" },
+                  { label: "Pending Review",   value: unverifiedArtists.length, icon: "⏳", accent: "#f59e0b", bg: "#fffbeb" },
+                ].map(s => (
+                  <div key={s.label} style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 14, padding: "20px 20px 18px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)", borderTop: `3px solid ${s.accent}` }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 10, background: s.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 14 }}>{s.icon}</div>
+                    <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 32, fontWeight: 700, color: C.text, lineHeight: 1 }}>{loading ? "—" : s.value}</div>
+                    <div style={{ fontSize: 11, color: C.textLight, letterSpacing: "1px", textTransform: "uppercase", marginTop: 6 }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+
               <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "auto", boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                   <thead>
-                    <tr>{["ID","Name","Email","Bio","ID Card","Status","Actions"].map(h => <th key={h} style={th}>{h}</th>)}</tr>
+                    <tr>{["ID","Artist","Email","Bio","ID Card","Status","Actions"].map(h => <th key={h} style={th}>{h}</th>)}</tr>
                   </thead>
                   <tbody>
                     {artists.map(artist => (
                       <tr key={artist.id}>
                         <td style={{ ...td, color: C.textLight, fontSize: 11 }}>#{artist.id}</td>
-                        <td style={{ ...td, fontWeight: 600 }}>{artist.name}</td>
+                        <td style={td}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <Avatar name={artist.name} email={artist.email} photo={artist.profilePhoto} size={32} bgColor={C.accent} />
+                            <span style={{ fontWeight: 600 }}>{artist.name}</span>
+                          </div>
+                        </td>
                         <td style={{ ...td, color: C.textMid }}>{artist.email}</td>
                         <td style={{ ...td, color: C.textMid, maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{artist.bio || "—"}</td>
                         <td style={td}>
@@ -363,7 +621,7 @@ export default function SuperAdmin() {
                           <div style={{ display: "flex", gap: 6 }}>
                             {!artist.isVerified
                               ? <Btn onClick={() => verifyArtist(artist.id, true)} variant="success" small>Verify</Btn>
-                              : <Btn onClick={() => verifyArtist(artist.id, false)} variant="ghost" small>Revoke</Btn>}
+                              : <Btn onClick={() => revokeArtist(artist.id, artist.name)} variant="ghost" small>Revoke</Btn>}
                             <Btn onClick={() => deleteUser(artist.id, artist.name)} variant="danger" small>Delete</Btn>
                           </div>
                         </td>
@@ -383,6 +641,22 @@ export default function SuperAdmin() {
                 <h1 style={{ fontFamily: "'Roboto', sans-serif", fontSize: 34, fontWeight: 600, color: C.text, margin: 0 }}>All Orders</h1>
                 <p style={{ fontSize: 12, color: C.textLight, margin: "4px 0 0" }}>{orders.length} total orders</p>
               </div>
+
+              {/* Stat cards */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 16, marginBottom: 24 }}>
+                {[
+                  { label: "Total Revenue",  value: `Rs. ${totalRevenue.toLocaleString()}`, icon: "💰", accent: "#f59e0b", bg: "#fffbeb" },
+                  { label: "Pending",        value: pendingOrders,   icon: "⏳", accent: "#78716c", bg: "#f5f5f4" },
+                  { label: "Delivered",      value: deliveredOrders, icon: "✓",  accent: "#16a34a", bg: "#f0fdf4" },
+                ].map(s => (
+                  <div key={s.label} style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 14, padding: "20px 20px 18px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)", borderTop: `3px solid ${s.accent}` }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 10, background: s.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 14 }}>{s.icon}</div>
+                    <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 28, fontWeight: 700, color: C.text, lineHeight: 1 }}>{loading ? "—" : s.value}</div>
+                    <div style={{ fontSize: 11, color: C.textLight, letterSpacing: "1px", textTransform: "uppercase", marginTop: 6 }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+
               <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "auto", boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                   <thead>

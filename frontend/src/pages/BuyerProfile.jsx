@@ -38,9 +38,7 @@ export default function BuyerProfile() {
         setOrders(oD); setLiked(lD); setFollowing(fD);
         if(nR.ok){const n=await nR.json(); setUnread(n.unreadCount||0);}
 
-        // Profile always comes from the user's own account record — this
-        // gives the real name/photo whether or not they've placed an order,
-        // instead of falling back to the JWT email or an order's buyer field.
+    
         if (meR.ok) {
           setProfile(await meR.json());
         } else {

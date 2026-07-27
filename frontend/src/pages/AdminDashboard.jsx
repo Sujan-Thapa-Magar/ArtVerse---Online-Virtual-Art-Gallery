@@ -1,13 +1,24 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  LabelList,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
 import Navbar from "../components/Navbar";
 import Avatar from "../components/Avatar";
 
-// How often the dashboard silently re-fetches live platform data.
 const POLL_INTERVAL_MS = 15000;
 
-// Buckets artworks + orders into the last 6 calendar months, for the
-// Platform Growth chart — computed from real timestamps, not fixtures.
+
 function computeMonthlyChart(artworks, orders) {
   const now = new Date();
   const buckets = [];
@@ -38,6 +49,54 @@ function computeMonthlyChart(artworks, orders) {
   return buckets;
 }
 
+const CATEGORY_COLORS = ["#dc2626", "#1c1917", "#f59e0b", "#3b82f6", "#16a34a", "#8b5cf6", "#ec4899"];
+
+const ORDER_STATUS_CFG = {
+  PENDING:    { bg: "#f5f5f4", color: "#78716c", label: "Pending" },
+  IN_TRANSIT: { bg: "#fffbeb", color: "#b45309", label: "In Transit" },
+  DELIVERED:  { bg: "#f0fdf4", color: "#16a34a", label: "Delivered" },
+};
+
+function computeCategoryBreakdown(artworks) {
+  const counts = {};
+  artworks.forEach((a) => {
+    const key = a.category?.trim() || "Uncategorized";
+    counts[key] = (counts[key] || 0) + 1;
+  });
+  return Object.entries(counts)
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 7);
+}
+
+function ChartTooltip({ active, payload, label }) {
+  if (!active || !payload || !payload.length) return null;
+  return (
+    <div className="bg-white border border-gray-100 rounded-lg shadow-md px-3 py-2 text-[12px]">
+      <p className="font-bold text-[#1c1917] mb-1">{label}</p>
+      {payload.map((p) => (
+        <p key={p.dataKey} className="flex items-center gap-1.5" style={{ color: p.fill }}>
+          <span className="w-2 h-2 rounded-full inline-block" style={{ background: p.fill }} />
+          {p.dataKey === "uploads" ? "Uploads" : "Sales"}: <span className="font-semibold">{p.value}</span>
+        </p>
+      ))}
+    </div>
+  );
+}
+
+function PieTooltip({ active, payload }) {
+  if (!active || !payload || !payload.length) return null;
+  const p = payload[0];
+  return (
+    <div className="bg-white border border-gray-100 rounded-lg shadow-md px-3 py-2 text-[12px]">
+      <p className="flex items-center gap-1.5 font-semibold text-[#1c1917]">
+        <span className="w-2 h-2 rounded-full inline-block" style={{ background: p.payload.fill }} />
+        {p.name}: {p.value}
+      </p>
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("Dashboard");
@@ -52,12 +111,10 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(null);
-  const [now, setNow] = useState(() => Date.now()); // ticks each second so "Xs ago" stays fresh, without calling Date.now() during render
-
+  const [now, setNow] = useState(() => Date.now()); 
   const token = localStorage.getItem("token");
 
-  // `silent` skips the loading spinner — used for background polling so the
-  // dashboard doesn't flicker every 15s, only on the very first load.
+  
   const fetchData = useCallback(async (silent = false) => {
     if (!token) { navigate("/login"); return; }
     if (!silent) setLoading(true);
@@ -110,7 +167,6 @@ export default function AdminDashboard() {
     return () => clearInterval(poll);
   }, [fetchData]);
 
-  // Just re-renders once a second so the "Updated Xs ago" label ticks — no network calls.
   useEffect(() => {
     const clock = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(clock);
@@ -133,7 +189,7 @@ export default function AdminDashboard() {
   };
 
   const chartData = computeMonthlyChart(artworks, orders);
-  const maxBar = Math.max(1, ...chartData.map((b) => Math.max(b.uploads, b.sales)));
+  const categoryData = computeCategoryBreakdown(artworks);
 
   const secondsAgo = lastUpdated ? Math.floor((now - lastUpdated.getTime()) / 1000) : null;
   const liveLabel =
@@ -339,6 +395,116 @@ export default function AdminDashboard() {
           </div>
         </div>
 
+        {/* Recent Orders + Category Breakdown */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+
+          {/* Recent Orders */}
+          <div className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-[15px] font-semibold text-[#1c1917]">Recent Orders</h2>
+              <span className="text-[10px] font-bold tracking-widest text-gray-400">{orders.length} TOTAL</span>
+            </div>
+
+            {loading ? (
+              <p className="text-[13px] text-gray-300 text-center py-5">Loading…</p>
+            ) : orders.length === 0 ? (
+              <p className="text-[13px] text-gray-300 text-center py-5">No orders yet.</p>
+            ) : (
+              [...orders]
+                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                .slice(0, 5)
+                .map((order) => {
+                  const s = ORDER_STATUS_CFG[order.status] || ORDER_STATUS_CFG.PENDING;
+                  return (
+                    <div
+                      key={order.id}
+                      className="flex items-center gap-3 py-3 border-b border-gray-50 last:border-b-0"
+                    >
+                      <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
+                        {getImageUrl(order.artwork?.imageUrl) ? (
+                          <img
+                            src={getImageUrl(order.artwork.imageUrl)}
+                            alt={order.artwork?.title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full" style={{ background: "linear-gradient(135deg, #e8e0d5, #d4c090)" }} />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-semibold text-[#1c1917] truncate">
+                          {order.artwork?.title || "Untitled"}
+                        </p>
+                        <p className="text-[11px] text-gray-400 truncate">
+                          {order.buyer?.name || order.buyer?.email || "Unknown buyer"} · {formatTime(order.createdAt)}
+                        </p>
+                      </div>
+                      <div className="flex-shrink-0 text-right">
+                        <p className="text-[12px] font-bold text-[#dc2626]">
+                          NPR {Number(order.pricePaid || 0).toLocaleString()}
+                        </p>
+                        <span
+                          className="text-[9px] font-bold tracking-wider px-2 py-0.5 rounded-full inline-block mt-0.5"
+                          style={{ background: s.bg, color: s.color }}
+                        >
+                          {s.label}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+            )}
+          </div>
+
+          {/* Category Breakdown */}
+          <div className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-[15px] font-semibold text-[#1c1917]">Category Breakdown</h2>
+            </div>
+
+            {loading ? (
+              <div className="h-52 flex items-center justify-center text-[13px] text-gray-300">Loading…</div>
+            ) : categoryData.length === 0 ? (
+              <div className="h-52 flex items-center justify-center text-[13px] text-gray-300">No artworks yet.</div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <ResponsiveContainer width="55%" height={200}>
+                  <PieChart>
+                    <Pie
+                      data={categoryData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={45}
+                      outerRadius={78}
+                      paddingAngle={2}
+                      stroke="none"
+                    >
+                      {categoryData.map((_, i) => (
+                        <Cell key={i} fill={CATEGORY_COLORS[i % CATEGORY_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<PieTooltip />} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="flex-1 flex flex-col gap-2 min-w-0">
+                  {categoryData.map((c, i) => (
+                    <div key={c.name} className="flex items-center gap-2 min-w-0">
+                      <span
+                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                        style={{ background: CATEGORY_COLORS[i % CATEGORY_COLORS.length] }}
+                      />
+                      <span className="text-[12px] text-gray-600 truncate flex-1">{c.name}</span>
+                      <span className="text-[12px] font-bold text-[#1c1917] flex-shrink-0">{c.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Platform Growth Chart */}
         <div className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
           <div className="flex items-start justify-between mb-6">
@@ -365,25 +531,41 @@ export default function AdminDashboard() {
               No activity in the last 6 months yet.
             </div>
           ) : (
-            <div className="flex items-end gap-2 h-44 pb-6 border-b border-gray-100">
-              {chartData.map((b) => (
-                <div key={b.key} className="flex-1 flex flex-col items-center gap-1 h-full">
-                  <div className="flex-1 w-full flex items-end gap-0.5">
-                    <div
-                      title={`${b.uploads} upload${b.uploads === 1 ? "" : "s"}`}
-                      className="flex-1 rounded-t-sm bg-[#1c1917] opacity-80 transition-all duration-300 min-h-1"
-                      style={{ height: `${(b.uploads / maxBar) * 100}%` }}
-                    />
-                    <div
-                      title={`${b.sales} sale${b.sales === 1 ? "" : "s"}`}
-                      className="flex-1 rounded-t-sm bg-[#dc2626] opacity-70 transition-all duration-300 min-h-1"
-                      style={{ height: `${(b.sales / maxBar) * 100}%` }}
-                    />
-                  </div>
-                  <span className="text-[9px] font-bold tracking-widest text-gray-300">{b.label}</span>
-                </div>
-              ))}
-            </div>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={chartData} margin={{ top: 20, right: 8, left: 8, bottom: 0 }} barGap={4}>
+                <CartesianGrid vertical={false} stroke="#f3f4f6" />
+                <XAxis
+                  dataKey="label"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 10, fontWeight: 700, fill: "#9ca3af", letterSpacing: 1 }}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  allowDecimals={false}
+                  tick={{ fontSize: 11, fill: "#9ca3af" }}
+                  width={32}
+                />
+                <Tooltip cursor={{ fill: "#f9fafb" }} content={<ChartTooltip />} />
+                <Bar dataKey="uploads" fill="#1c1917" radius={[3, 3, 0, 0]} maxBarSize={22} fillOpacity={0.85}>
+                  <LabelList
+                    dataKey="uploads"
+                    position="top"
+                    formatter={(v) => (v > 0 ? v : "")}
+                    style={{ fontSize: 10, fontWeight: 700, fill: "#1c1917" }}
+                  />
+                </Bar>
+                <Bar dataKey="sales" fill="#dc2626" radius={[3, 3, 0, 0]} maxBarSize={22} fillOpacity={0.85}>
+                  <LabelList
+                    dataKey="sales"
+                    position="top"
+                    formatter={(v) => (v > 0 ? v : "")}
+                    style={{ fontSize: 10, fontWeight: 700, fill: "#dc2626" }}
+                  />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           )}
         </div>
 

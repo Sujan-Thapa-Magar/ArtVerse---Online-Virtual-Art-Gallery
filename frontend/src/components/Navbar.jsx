@@ -16,10 +16,7 @@ function getCurrentUser() {
   }
 }
 
-/**
- * Shared site navbar — identical on every page.
- * Pass `active` ("home" | "gallery" | "notifications" | "profile") to highlight the current link.
- */
+
 export default function Navbar({ active = "" }) {
   const navigate = useNavigate();
   const { logout } = useAuth();
@@ -44,8 +41,6 @@ export default function Navbar({ active = "" }) {
         .then((d) => setUnreadCount(d.unreadCount || 0))
         .catch(() => {});
 
-      // Real name + profile photo aren't in the JWT (it only carries email
-      // + role), so fetch them for the avatar.
       fetch(`${API}/api/users/me`, { headers })
         .then((r) => (r.ok ? r.json() : null))
         .then((d) => d && setMe(d))
@@ -73,6 +68,8 @@ export default function Navbar({ active = "" }) {
   const links = [
     { label: "HOME", path: "/home", key: "home" },
     { label: "GALLERY", path: "/gallery", key: "gallery" },
+    { label: "ABOUT", path: "/about-us", key: "about" },
+    { label: "CONTACT", path: "/contact-us", key: "contact" },
     ...(!isGuest
       ? [{ label: "NOTIFICATIONS", path: "/notification", key: "notifications" }]
       : []),
@@ -81,6 +78,8 @@ export default function Navbar({ active = "" }) {
   const menuItems = [
     { label: "🏠  Home", path: "/home" },
     { label: "🖼  Gallery", path: "/gallery" },
+    { label: "ℹ️  About Us", path: "/about-us" },
+    { label: "✉️  Contact Us", path: "/contact-us" },
     ...(!isGuest ? [{ label: "💬  Messages", path: "/chat" }] : []),
     ...(!isGuest ? [{ label: "🔔  Notifications", path: "/notification" }] : []),
     ...(!isGuest && isArtist
@@ -168,7 +167,6 @@ export default function Navbar({ active = "" }) {
                   <Avatar name={me?.name} email={user?.sub} photo={me?.profilePhoto} size={36} />
                 </button>
 
-                {/* Invisible bridge so the dropdown doesn't disappear on the gap between button and menu */}
                 <div className="absolute right-0 top-full h-2 w-full" />
 
                 <div className="absolute right-0 top-full mt-2 w-40 bg-white rounded-xl border border-stone-200 shadow-lg py-1.5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
@@ -197,7 +195,6 @@ export default function Navbar({ active = "" }) {
         </div>
       </nav>
 
-      {/* Slide-in menu — mobile only */}
       {menuOpen && (
         <div
           className="fixed inset-0 z-50 sm:hidden bg-stone-900/40 backdrop-blur-sm"
