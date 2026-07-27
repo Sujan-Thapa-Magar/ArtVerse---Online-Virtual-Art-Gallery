@@ -24,10 +24,7 @@ public class ArtworkController {
     @Autowired
     private ArtworkService artworkService;
 
-    // -----------------------------------------------
-    // POST /api/artworks/upload
-    // Upload a new artwork (only logged-in artists)
-    // -----------------------------------------------
+
     @PostMapping("/upload")
     public ResponseEntity<?> uploadArtwork(
             @RequestParam("title") @NotBlank(message = "Title is required.") @Size(max = 200, message = "Title must be at most 200 characters.") String title,
@@ -64,20 +61,14 @@ public class ArtworkController {
         }
     }
 
-    // -----------------------------------------------
-    // GET /api/artworks
-    // Get all artworks (for the public gallery)
-    // -----------------------------------------------
+
     @GetMapping
     public ResponseEntity<List<Artwork>> getAllArtworks() {
         List<Artwork> artworks = artworkService.getAllArtworks();
         return ResponseEntity.ok(artworks);
     }
 
-    // -----------------------------------------------
-    // GET /api/artworks/{id}
-    // Get a single artwork by its ID
-    // -----------------------------------------------
+
     @GetMapping("/{id}")
     public ResponseEntity<?> getArtworkById(@PathVariable Long id, Authentication authentication) {
         try {
@@ -94,20 +85,14 @@ public class ArtworkController {
         }
     }
 
-    // -----------------------------------------------
-    // GET /api/artworks/artist/{artistId}
-    // Get all artworks by a specific artist
-    // -----------------------------------------------
+
     @GetMapping("/artist/{artistId}")
     public ResponseEntity<List<Artwork>> getArtworksByArtist(@PathVariable Long artistId) {
         List<Artwork> artworks = artworkService.getArtworksByArtist(artistId);
         return ResponseEntity.ok(artworks);
     }
 
-    // -----------------------------------------------
-    // DELETE /api/artworks/{id}
-    // Delete an artwork by ID
-    // -----------------------------------------------
+
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteArtwork(@PathVariable Long id, Authentication authentication) {
         try {

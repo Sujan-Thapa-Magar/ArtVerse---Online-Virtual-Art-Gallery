@@ -15,12 +15,6 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
-/**
- * eSewa ePay v2 helper — signs the payment request and verifies the
- * transaction against eSewa's status-check API.
- *
- * Flow docs: https://developer.esewa.com.np/pages/Epay
- */
 @Service
 public class EsewaService {
 
@@ -54,10 +48,6 @@ public class EsewaService {
         }
     }
 
-    /**
-     * Signature over the fields declared in signed_field_names, in order:
-     * total_amount,transaction_uuid,product_code
-     */
     public String signFormFields(String totalAmount, String transactionUuid) {
         String message = "total_amount=" + totalAmount
                 + ",transaction_uuid=" + transactionUuid

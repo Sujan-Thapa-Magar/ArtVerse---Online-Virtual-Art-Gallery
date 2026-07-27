@@ -19,19 +19,6 @@ public class OrderController {
     @Autowired
     private OrderService orderService;
 
-    // Buy Now — creates an order instantly
-    @PostMapping("/{artworkId}")
-    public ResponseEntity<?> buyNow(
-            @PathVariable Long artworkId,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        try {
-            Order order = orderService.buyNow(artworkId, userDetails.getUsername());
-            return ResponseEntity.ok(order);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
-
     // Get logged-in buyer's orders
     @GetMapping("/my")
     public ResponseEntity<List<Order>> getMyOrders(
