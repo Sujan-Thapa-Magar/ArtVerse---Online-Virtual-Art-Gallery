@@ -117,7 +117,7 @@ export default function ArtworkUpload() {
           padding: 11px 16px;
           color: #1c1917;
           font-size: 14px;
-          font-family: 'Roboto', sans-serif;
+          font-family: inherit;
           outline: none;
           transition: border-color 0.2s, box-shadow 0.2s;
           box-sizing: border-box;
@@ -140,7 +140,7 @@ export default function ArtworkUpload() {
           color: C.textLight, fontSize: 11, letterSpacing: "2px",
           textTransform: "uppercase", marginBottom: 32,
           display: "flex", alignItems: "center", gap: 6,
-          fontFamily: "'Roboto', sans-serif", transition: "color 0.2s",
+          transition: "color 0.2s",
           fontWeight: 700
         }}
           onMouseEnter={e => e.currentTarget.style.color = C.accent}
@@ -154,7 +154,6 @@ export default function ArtworkUpload() {
             color: C.accent, textTransform: "uppercase", margin: "0 0 10px",
           }}>Artist Studio</p>
           <h1 style={{
-            fontFamily: "'Roboto', sans-serif",
             fontSize: "clamp(2rem, 6vw, 2.8rem)",
             fontWeight: 700, color: C.text, margin: "0 0 10px", lineHeight: 1.2,
           }}>Upload Artwork</h1>
@@ -366,7 +365,6 @@ export default function ArtworkUpload() {
                 fontWeight: 800,
                 letterSpacing: "2px",
                 textTransform: "uppercase",
-                fontFamily: "'Roboto', sans-serif",
                 marginTop: 8,
                 transition: "all 0.2s",
                 background: loading || success
@@ -396,7 +394,6 @@ export default function ArtworkUpload() {
 function SectionLabel({ children, color }) {
   return (
     <p style={{
-      fontFamily: "'Roboto', sans-serif",
       fontSize: 18, color: color, fontWeight: 700,
       letterSpacing: "0.3px", margin: "0 0 16px",
     }}>{children}</p>

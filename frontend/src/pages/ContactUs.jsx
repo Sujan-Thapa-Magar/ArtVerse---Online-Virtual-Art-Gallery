@@ -51,7 +51,7 @@ export default function ContactUs() {
           <span className="w-1.5 h-1.5 rounded-full bg-red-600" />
           <span className="uppercase tracking-[0.25em] font-bold text-[9px]">Get In Touch</span>
         </div>
-        <h1 className="font-black tracking-tight leading-tight mb-4" style={{ fontSize: "clamp(32px, 5vw, 52px)" }}>
+        <h1 className="font-display font-bold leading-tight mb-4" style={{ fontSize: "clamp(34px, 5vw, 56px)" }}>
           Contact Us
         </h1>
         <p className="text-stone-500 text-base leading-relaxed max-w-2xl mx-auto">
@@ -95,11 +95,11 @@ export default function ContactUs() {
 
           {/* Contact form */}
           <div>
-            <h2 className="text-xl font-bold text-stone-900 mb-5">Send a Message</h2>
+            <h2 className="font-display text-2xl font-semibold text-stone-900 mb-5">Send a Message</h2>
             {sent ? (
               <div className="bg-green-50 border border-green-200 rounded-2xl p-8 text-center">
                 <span className="text-3xl block mb-3">✓</span>
-                <h3 className="font-bold text-stone-900 text-sm mb-2">Opening your email client…</h3>
+                <h3 className="font-bold text-stone-900 text-sm mb-2">Opening</h3>
                 <p className="text-stone-500 text-xs leading-relaxed mb-4">
                   We've pre-filled a message to {SUPPORT_EMAIL}. Just hit send from there.
                 </p>
@@ -151,7 +151,6 @@ export default function ContactUs() {
                   Send Message
                 </button>
                 <p className="text-[11px] text-stone-400 text-center">
-                  Opens your email client with this message pre-filled to {SUPPORT_EMAIL}.
                 </p>
               </form>
             )}
@@ -159,7 +158,7 @@ export default function ContactUs() {
 
           {/* FAQ */}
           <div>
-            <h2 className="text-xl font-bold text-stone-900 mb-5">Frequently Asked</h2>
+            <h2 className="font-display text-2xl font-semibold text-stone-900 mb-5">Frequently Asked</h2>
             <div className="flex flex-col gap-2.5">
               {faqs.map((f, i) => {
                 const open = openFaq === i;

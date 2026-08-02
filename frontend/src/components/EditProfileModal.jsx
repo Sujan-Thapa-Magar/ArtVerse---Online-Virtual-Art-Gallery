@@ -197,8 +197,14 @@ export default function EditProfileModal({ onClose }) {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="At least 6 characters"
+                  minLength={6}
+                  pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[^A-Za-z0-9]).+"
+                  title="At least 6 characters, with an uppercase letter, a lowercase letter, and a special character."
                   className="w-full px-4 py-3 bg-stone-100 border border-stone-200 rounded-md text-sm text-stone-700 outline-none focus:border-red-600 transition-colors"
                 />
+                <p className="text-[11px] text-stone-400 mt-1.5">
+                  Leave blank to keep your current password. New password needs an uppercase letter, a lowercase letter, and a special character.
+                </p>
               </div>
 
               <div>

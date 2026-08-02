@@ -110,20 +110,20 @@ export default function VirtualExhibition() {
   };
 
   if (loading) return (
-    <div style={{ minHeight: "100vh", background: C.pageBg, display: "flex", alignItems: "center", justifyContent: "center", color: C.textLight, fontFamily: "Roboto, sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: "2px" }}>
+    <div style={{ minHeight: "100vh", background: C.pageBg, display: "flex", alignItems: "center", justifyContent: "center", color: C.textLight, fontSize: 11, fontWeight: 700, letterSpacing: "2px" }}>
       LOADING EXHIBITION...
     </div>
   );
 
   if (error || artworks.length === 0) return (
-    <div style={{ minHeight: "100vh", background: C.pageBg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: C.textMid, fontFamily: "Roboto, sans-serif", gap: 16 }}>
+    <div style={{ minHeight: "100vh", background: C.pageBg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: C.textMid, gap: 16 }}>
       <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "1px" }}>{error || "This exhibition has no artworks yet."}</div>
       <button onClick={() => navigate("/home")} style={{ background: "none", border: `1px solid ${C.border}`, color: C.textMid, padding: "10px 24px", borderRadius: 12, cursor: "pointer", fontSize: 11, fontWeight: 700, letterSpacing: "1px", transition: "all 0.2s" }}>GO HOME</button>
     </div>
   );
 
   return (
-    <div style={{ height: "100vh", overflow: "hidden", background: C.pageBg, display: "flex", flexDirection: "column", fontFamily: "'Roboto', sans-serif", color: C.text, position: "relative" }}>
+    <div style={{ height: "100vh", overflow: "hidden", background: C.pageBg, display: "flex", flexDirection: "column", color: C.text, position: "relative" }}>
       <style>{`
         @keyframes fadeSlideIn  { from { opacity: 0; transform: translateX(32px); } to { opacity: 1; transform: translateX(0); } }
         @keyframes fadeSlideOut { from { opacity: 1; transform: translateX(0);    } to { opacity: 0; transform: translateX(-32px); } }
@@ -157,7 +157,7 @@ export default function VirtualExhibition() {
       {showCurator && exhibition && (
         <div style={{ position: "absolute", top: 122, right: 32, background: C.cardBg, border: `1px solid ${C.border}`, borderRadius: 16, padding: "20px 24px", zIndex: 100, minWidth: 280, boxShadow: "0 16px 40px rgba(0,0,0,0.06)" }}>
           <div style={{ fontSize: 9, color: C.accent, letterSpacing: "2px", textTransform: "uppercase", marginBottom: 10, fontWeight: 700 }}>About this Exhibition</div>
-          <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 20, fontWeight: 700, color: C.text, marginBottom: 8 }}>{exhibition.title}</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: C.text, marginBottom: 8 }}>{exhibition.title}</div>
           <div style={{ fontSize: 13, color: C.textMid, lineHeight: 1.6, marginBottom: 12 }}>{exhibition.description || "No description provided."}</div>
           <div style={{ fontSize: 11, color: C.textLight, fontWeight: 500 }}>By {exhibition.artist?.name}</div>
         </div>
@@ -183,7 +183,7 @@ export default function VirtualExhibition() {
           </div>
 
           <div style={{ textAlign: "center" }}>
-            <h2 style={{ fontFamily: "'Roboto', sans-serif", fontSize: 28, fontWeight: 700, margin: "0 0 6px" }}>{art.title}</h2>
+            <h2 className="font-display" style={{ fontSize: 30, fontWeight: 700, margin: "0 0 6px" }}>{art.title}</h2>
             <p style={{ fontSize: 11, fontWeight: 600, color: C.textMid, letterSpacing: "2px", textTransform: "uppercase", margin: 0 }}>{art.artist?.name} &nbsp;·&nbsp; {getYear(art.createdAt)}</p>
           </div>
 
@@ -216,7 +216,7 @@ export default function VirtualExhibition() {
             <>
               <div style={{ fontSize: 9, color: C.accent, letterSpacing: "2.5px", textTransform: "uppercase", marginBottom: 3, fontWeight: 800 }}>Available for Acquisition</div>
               <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-                <span style={{ fontFamily: "'Roboto', sans-serif", fontSize: 26, fontWeight: 700, color: C.text }}>{formatPrice(art.price)}</span>
+                <span style={{ fontSize: 26, fontWeight: 700, color: C.text }}>{formatPrice(art.price)}</span>
               </div>
             </>
           ) : (
@@ -232,10 +232,15 @@ export default function VirtualExhibition() {
         <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
           
           {/* Like button */}
-          <button onClick={handleLike} disabled={likeLoading} className="control-btn"
-            style={{ width: 46, height: 46, background: liked ? C.accentBg : C.cardBg, border: `1.5px solid ${liked ? C.accent : C.border}`, borderRadius: "50%", color: liked ? C.accent : C.textMid, fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
-            {liked ? "♥" : "♡"}
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <button onClick={handleLike} disabled={likeLoading} className="control-btn"
+              style={{ width: 46, height: 46, background: liked ? C.accentBg : C.cardBg, border: `1.5px solid ${liked ? C.accent : C.border}`, borderRadius: "50%", color: liked ? C.accent : C.textMid, fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
+              {liked ? "♥" : "♡"}
+            </button>
+            {likeCount > 0 && (
+              <span style={{ fontSize: 12, fontWeight: 700, color: C.textMid }}>{likeCount}</span>
+            )}
+          </div>
 
           {/* View detail button with explicit direction arrow */}
           <button onClick={() => navigate(`/artwork/${art.id}`)} className="control-btn"

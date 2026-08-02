@@ -291,8 +291,14 @@ export default function Register() {
                     value={formData.password}
                     onChange={handleChange}
                     required
+                    minLength={6}
+                    pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[^A-Za-z0-9]).+"
+                    title="At least 6 characters, with an uppercase letter, a lowercase letter, and a special character."
                     className="w-full px-3 py-2.5 bg-gray-100 border border-gray-200 rounded-md text-sm text-gray-700 outline-none focus:border-gray-400 transition-colors"
                   />
+                  <p className="text-[11px] text-gray-400 mt-1.5">
+                    At least 6 characters, with an uppercase letter, a lowercase letter, and a special character.
+                  </p>
                 </div>
 
                 {/* Role Selector */}

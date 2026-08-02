@@ -1,12 +1,49 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Roboto", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  /* UI / body — Inter is drawn for screen legibility at the small sizes this
+     app leans on heavily (9–12px tracked-out labels, dense dashboard tables). */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* Display — a warm old-style serif gives headings the editorial,
+     gallery-catalogue voice a utilitarian UI sans can't. Reserved for large
+     type: below ~20px its stroke contrast muddies, so section headers and
+     all UI chrome stay in the sans. */
+  --font-display: "Fraunces", ui-serif, Georgia, "Times New Roman", serif;
   --color-cream: #faf6f0;
 }
 
 body {
   @apply bg-cream text-stone-900 font-sans antialiased;
+  /* Both families are variable fonts with an optical-size axis — let the
+     browser pick the right optical grade per rendered size. */
+  font-optical-sizing: auto;
+}
+
+/* Form controls don't inherit font-family from the body by default — without
+   this they fall back to the browser's own UI font instead of Inter. */
+input,
+textarea,
+select,
+button {
+  font-family: inherit;
+}
+
+/* Display type is set tighter: large serif headings need negative tracking
+   to avoid looking loose and gappy. */
+.font-display {
+  letter-spacing: -0.02em;
+}
+
+/* Figures in tables, prices and stat cards line up in columns instead of
+   jittering as values change. */
+table,
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .no-scrollbar {

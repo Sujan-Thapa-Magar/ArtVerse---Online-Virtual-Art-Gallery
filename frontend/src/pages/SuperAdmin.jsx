@@ -202,7 +202,7 @@ export default function SuperAdmin() {
   const td = { padding: "13px 16px", fontSize: 13, color: C.text, borderBottom: `1px solid ${C.border}`, verticalAlign: "middle" };
 
   const Btn = ({ children, onClick, variant = "primary", small }) => {
-    const base = { border: "none", borderRadius: 6, fontSize: small ? 11 : 12, fontWeight: 700, cursor: "pointer", padding: small ? "5px 12px" : "8px 18px", fontFamily: "'Roboto', sans-serif", transition: "all 0.18s", letterSpacing: "0.3px" };
+    const base = { border: "none", borderRadius: 6, fontSize: small ? 11 : 12, fontWeight: 700, cursor: "pointer", padding: small ? "5px 12px" : "8px 18px", transition: "all 0.18s", letterSpacing: "0.3px" };
     const variants = {
       primary:  { background: C.accent,    color: "#fff" },
       danger:   { background: "none",      color: "#dc2626", border: "1px solid #dc2626" },
@@ -220,9 +220,42 @@ export default function SuperAdmin() {
         select { appearance: none; -webkit-appearance: none; }
         tr:hover td { background: #faf6f0 !important; }
         @media (max-width: 768px) { .sa-sidebar { display: none !important; } }
+        .sa-mobile-tabs { display: none; }
+        @media (max-width: 768px) { .sa-mobile-tabs { display: flex !important; } }
       `}</style>
 
       <Navbar />
+
+      {/* ── Mobile tab bar — the sidebar is hidden below 768px, this replaces it ── */}
+      <div className="sa-mobile-tabs" style={{ alignItems: "center", gap: 4, padding: "10px 12px", background: C.sidebar, overflowX: "auto", position: "sticky", top: 64, zIndex: 10 }}>
+        <button
+          onClick={() => navigate("/admin")}
+          style={{ flexShrink: 0, background: "rgba(255,255,255,0.08)", border: "none", width: 30, height: 30, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fef2f2", fontSize: 14, fontWeight: 700, marginRight: 4 }}
+        >←</button>
+        {tabs.map(t => {
+          const active = activeTab === t.key;
+          return (
+            <button key={t.key} onClick={() => setActiveTab(t.key)} style={{
+              flexShrink: 0, display: "flex", alignItems: "center", gap: 6,
+              background: active ? C.sidebarActive : "none",
+              border: "none", borderRadius: 8,
+              color: active ? "#fef2f2" : C.sidebarText,
+              fontSize: 12, fontWeight: active ? 700 : 500,
+              padding: "8px 14px", cursor: "pointer", whiteSpace: "nowrap",
+            }}>
+              <span>{t.icon}</span>
+              {t.key}
+              {t.badge > 0 && (
+                <span style={{ background: "#dc2626", color: "#fff", fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 10 }}>{t.badge}</span>
+              )}
+            </button>
+          );
+        })}
+        <button
+          onClick={() => { localStorage.removeItem("token"); navigate("/login"); }}
+          style={{ flexShrink: 0, marginLeft: "auto", background: "none", border: "none", color: "#f87171", fontSize: 12, fontWeight: 500, padding: "8px 14px", cursor: "pointer", whiteSpace: "nowrap" }}
+        >🚪 Logout</button>
+      </div>
 
       <div style={{ display: "flex", minHeight: "calc(100vh - 64px)" }}>
 
@@ -230,7 +263,11 @@ export default function SuperAdmin() {
       <div className="sa-sidebar" style={{ width: 220, minWidth: 220, background: C.sidebar, display: "flex", flexDirection: "column", padding: "0 0 24px", position: "sticky", top: 64, height: "calc(100vh - 64px)", overflow: "hidden" }}>
         {/* Logo */}
         <div style={{ padding: "24px 20px 20px", borderBottom: `1px solid ${C.sidebarBorder}`, marginBottom: 12 }}>
-          <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 20, fontWeight: 700, color: "#fef2f2", letterSpacing: "2px" }}>ArtVerse</div>
+          <button
+            onClick={() => navigate("/admin")}
+            style={{ background: "rgba(255,255,255,0.08)", border: "none", width: 30, height: 30, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fef2f2", fontSize: 14, fontWeight: 700, marginBottom: 14 }}
+          >←</button>
+          <div style={{ fontSize: 20, fontWeight: 700, color: "#fef2f2", letterSpacing: "2px" }}>ArtVerse</div>
           <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "2.5px", color: C.accent, textTransform: "uppercase", marginTop: 3 }}>Admin Panel</div>
         </div>
 
@@ -245,7 +282,7 @@ export default function SuperAdmin() {
                 color: active ? "#fef2f2" : C.sidebarText,
                 fontSize: 13, fontWeight: active ? 600 : 400,
                 padding: "13px 20px", textAlign: "left", cursor: "pointer",
-                fontFamily: "'Roboto', sans-serif", transition: "all 0.18s",
+                transition: "all 0.18s",
                 display: "flex", alignItems: "center", gap: 10,
               }}
               onMouseEnter={e => { if (!active) { e.currentTarget.style.color = "#fef2f2"; e.currentTarget.style.background = "rgba(255,255,255,0.04)"; } }}
@@ -264,7 +301,7 @@ export default function SuperAdmin() {
         {/* Logout */}
         <button
           onClick={() => { localStorage.removeItem("token"); navigate("/login"); }}
-          style={{ background: "none", border: "none", color: "#f87171", fontSize: 13, padding: "12px 20px", textAlign: "left", cursor: "pointer", fontFamily: "'Roboto', sans-serif", display: "flex", alignItems: "center", gap: 10, borderTop: `1px solid ${C.sidebarBorder}` }}
+          style={{ background: "none", border: "none", color: "#f87171", fontSize: 13, padding: "12px 20px", textAlign: "left", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, borderTop: `1px solid ${C.sidebarBorder}` }}
         >🚪 Logout</button>
       </div>
 
@@ -273,21 +310,21 @@ export default function SuperAdmin() {
 
 
 
-        <div style={{ padding: "28px 40px", width: "100%", boxSizing: "border-box" }}>
+        <div className="px-4 sm:px-6 md:px-10" style={{ paddingTop: 28, paddingBottom: 28, width: "100%", boxSizing: "border-box" }}>
 
           {/* ── Edit Modal ── */}
           {editingUser && (
             <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, backdropFilter: "blur(3px)" }} onClick={() => setEditingUser(null)}>
-              <div style={{ background: C.white, borderRadius: 16, padding: 28, width: 460, boxShadow: "0 24px 64px rgba(0,0,0,0.2)" }} onClick={e => e.stopPropagation()}>
+              <div style={{ background: C.white, borderRadius: 16, padding: 28, width: 460, maxWidth: "92vw", maxHeight: "90vh", overflowY: "auto", boxSizing: "border-box", boxShadow: "0 24px 64px rgba(0,0,0,0.2)" }} onClick={e => e.stopPropagation()}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-                  <h3 style={{ fontFamily: "'Roboto', sans-serif", fontSize: 22, fontWeight: 600, margin: 0 }}>Edit User</h3>
+                  <h3 style={{ fontSize: 22, fontWeight: 600, margin: 0 }}>Edit User</h3>
                   <button onClick={() => setEditingUser(null)} style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: C.textLight }}>✕</button>
                 </div>
                 {[["Full Name","text","name"],["Email","email","email"]].map(([label,type,key]) => (
                   <div key={key} style={{ marginBottom: 16 }}>
                     <label style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: C.textLight, display: "block", marginBottom: 6 }}>{label}</label>
                     <input type={type} value={editForm[key]} onChange={e => setEditForm({ ...editForm, [key]: e.target.value })}
-                      style={{ width: "100%", padding: "10px 14px", border: `1.5px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "'Roboto', sans-serif", color: C.text, outline: "none", boxSizing: "border-box" }}
+                      style={{ width: "100%", padding: "10px 14px", border: `1.5px solid ${C.border}`, borderRadius: 8, fontSize: 13, color: C.text, outline: "none", boxSizing: "border-box" }}
                       onFocus={e => e.target.style.borderColor = C.accent} onBlur={e => e.target.style.borderColor = C.border}
                     />
                   </div>
@@ -295,7 +332,7 @@ export default function SuperAdmin() {
                 <div style={{ marginBottom: 16 }}>
                   <label style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: C.textLight, display: "block", marginBottom: 6 }}>Bio</label>
                   <textarea value={editForm.bio} onChange={e => setEditForm({ ...editForm, bio: e.target.value })} rows={3} placeholder="User bio..."
-                    style={{ width: "100%", padding: "10px 14px", border: `1.5px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "'Roboto', sans-serif", color: C.text, outline: "none", resize: "vertical", boxSizing: "border-box" }}
+                    style={{ width: "100%", padding: "10px 14px", border: `1.5px solid ${C.border}`, borderRadius: 8, fontSize: 13, color: C.text, outline: "none", resize: "vertical", boxSizing: "border-box" }}
                     onFocus={e => e.target.style.borderColor = C.accent} onBlur={e => e.target.style.borderColor = C.border}
                   />
                 </div>
@@ -303,10 +340,12 @@ export default function SuperAdmin() {
                   <label style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: C.textLight, display: "block", marginBottom: 6 }}>Reset Password</label>
                   <input type="password" value={editForm.password} onChange={e => setEditForm({ ...editForm, password: e.target.value })}
                     placeholder="Leave blank to keep current password"
-                    style={{ width: "100%", padding: "10px 14px", border: `1.5px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "'Roboto', sans-serif", color: C.text, outline: "none", boxSizing: "border-box" }}
+                    pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{6,}"
+                    title="At least 6 characters, with an uppercase letter, a lowercase letter, and a special character."
+                    style={{ width: "100%", padding: "10px 14px", border: `1.5px solid ${C.border}`, borderRadius: 8, fontSize: 13, color: C.text, outline: "none", boxSizing: "border-box" }}
                     onFocus={e => e.target.style.borderColor = C.accent} onBlur={e => e.target.style.borderColor = C.border}
                   />
-                  <p style={{ fontSize: 11, color: C.textLight, margin: "6px 0 0" }}>At least 6 characters if set.</p>
+                  <p style={{ fontSize: 11, color: C.textLight, margin: "6px 0 0" }}>If set: at least 6 characters, with an uppercase letter, a lowercase letter, and a special character.</p>
                 </div>
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
                   <Btn onClick={() => setEditingUser(null)} variant="ghost">Cancel</Btn>
@@ -321,7 +360,7 @@ export default function SuperAdmin() {
             <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200 }} onClick={() => setViewingId(null)}>
               <div style={{ background: C.white, borderRadius: 16, padding: 24, maxWidth: 500, width: "90%", boxShadow: "0 24px 64px rgba(0,0,0,0.3)" }} onClick={e => e.stopPropagation()}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                  <h3 style={{ fontFamily: "'Roboto', sans-serif", fontSize: 20, fontWeight: 600, margin: 0 }}>ID Card</h3>
+                  <h3 style={{ fontSize: 20, fontWeight: 600, margin: 0 }}>ID Card</h3>
                   <button onClick={() => setViewingId(null)} style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: C.textLight }}>✕</button>
                 </div>
                 <img src={viewingId} alt="ID" style={{ width: "100%", borderRadius: 8, objectFit: "contain", maxHeight: 400 }} />
@@ -334,7 +373,7 @@ export default function SuperAdmin() {
             <div>
               <div style={{ marginBottom: 28 }}>
                 <p style={{ fontSize: 10, color: C.accent, fontWeight: 700, letterSpacing: "3px", textTransform: "uppercase", margin: "0 0 6px" }}>Overview</p>
-                <h1 style={{ fontFamily: "'Roboto', sans-serif", fontSize: 34, fontWeight: 600, color: C.text, margin: 0 }}>Admin Dashboard</h1>
+                <h1 className="font-display" style={{ fontSize: 36, fontWeight: 600, color: C.text, margin: 0 }}>Admin Dashboard</h1>
               </div>
 
               {/* Stat cards */}
@@ -349,14 +388,14 @@ export default function SuperAdmin() {
                 ].map(s => (
                   <div key={s.label} style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 14, padding: "20px 20px 18px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)", borderTop: `3px solid ${s.accent}` }}>
                     <div style={{ width: 40, height: 40, borderRadius: 10, background: s.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 14 }}>{s.icon}</div>
-                    <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 28, fontWeight: 700, color: C.text, lineHeight: 1 }}>{loading ? "—" : s.value}</div>
+                    <div className="tabular-nums" style={{ fontSize: 28, fontWeight: 700, color: C.text, lineHeight: 1 }}>{loading ? "—" : s.value}</div>
                     <div style={{ fontSize: 11, color: C.textLight, letterSpacing: "1px", textTransform: "uppercase", marginTop: 6 }}>{s.label}</div>
                   </div>
                 ))}
               </div>
 
               {/* Role breakdown + Order status + Recent orders */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 24 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16, marginBottom: 24 }}>
 
                 {/* Role breakdown donut */}
                 <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}>
@@ -490,7 +529,7 @@ export default function SuperAdmin() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 24, gap: 16, flexWrap: "wrap" }}>
                 <div>
                   <p style={{ fontSize: 10, color: C.accent, fontWeight: 700, letterSpacing: "3px", textTransform: "uppercase", margin: "0 0 6px" }}>Management</p>
-                  <h1 style={{ fontFamily: "'Roboto', sans-serif", fontSize: 34, fontWeight: 600, color: C.text, margin: 0 }}>All Users</h1>
+                  <h1 className="font-display" style={{ fontSize: 36, fontWeight: 600, color: C.text, margin: 0 }}>All Users</h1>
                   <p style={{ fontSize: 12, color: C.textLight, margin: "4px 0 0" }}>
                     {filteredUsers.length === users.length ? `${users.length} total users on the platform` : `${filteredUsers.length} of ${users.length} users`}
                   </p>
@@ -500,7 +539,7 @@ export default function SuperAdmin() {
                   value={userSearch}
                   onChange={e => setUserSearch(e.target.value)}
                   placeholder="Search by name or email…"
-                  style={{ padding: "10px 14px", border: `1.5px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "'Roboto', sans-serif", color: C.text, outline: "none", width: 260, background: C.white }}
+                  style={{ padding: "10px 14px", border: `1.5px solid ${C.border}`, borderRadius: 8, fontSize: 13, color: C.text, outline: "none", width: 260, maxWidth: "100%", background: C.white }}
                   onFocus={e => e.target.style.borderColor = C.accent}
                   onBlur={e => e.target.style.borderColor = C.border}
                 />
@@ -516,7 +555,7 @@ export default function SuperAdmin() {
                 ].map(s => (
                   <div key={s.label} style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 14, padding: "20px 20px 18px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)", borderTop: `3px solid ${s.accent}` }}>
                     <div style={{ width: 40, height: 40, borderRadius: 10, background: s.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 14 }}>{s.icon}</div>
-                    <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 28, fontWeight: 700, color: C.text, lineHeight: 1 }}>{loading ? "—" : s.value}</div>
+                    <div className="tabular-nums" style={{ fontSize: 28, fontWeight: 700, color: C.text, lineHeight: 1 }}>{loading ? "—" : s.value}</div>
                     <div style={{ fontSize: 11, color: C.textLight, letterSpacing: "1px", textTransform: "uppercase", marginTop: 6 }}>{s.label}</div>
                   </div>
                 ))}
@@ -542,7 +581,7 @@ export default function SuperAdmin() {
                         <td style={{ ...td, color: C.textMid }}>{user.email}</td>
                         <td style={td}>
                           <select value={user.role} onChange={e => changeRole(user.id, e.target.value)}
-                            style={{ padding: "5px 10px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 11, fontFamily: "'Roboto', sans-serif", color: C.text, background: C.pageBg, cursor: "pointer" }}>
+                            style={{ padding: "5px 10px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 11, color: C.text, background: C.pageBg, cursor: "pointer" }}>
                             {["BUYER","ARTIST","ADMIN"].map(r => <option key={r}>{r}</option>)}
                           </select>
                         </td>
@@ -571,7 +610,7 @@ export default function SuperAdmin() {
             <div>
               <div style={{ marginBottom: 24 }}>
                 <p style={{ fontSize: 10, color: C.accent, fontWeight: 700, letterSpacing: "3px", textTransform: "uppercase", margin: "0 0 6px" }}>Verification</p>
-                <h1 style={{ fontFamily: "'Roboto', sans-serif", fontSize: 34, fontWeight: 600, color: C.text, margin: 0 }}>Artist Verification</h1>
+                <h1 className="font-display" style={{ fontSize: 36, fontWeight: 600, color: C.text, margin: 0 }}>Artist Verification</h1>
                 <p style={{ fontSize: 12, color: C.textLight, margin: "4px 0 0" }}>{artists.length} artists — {unverifiedArtists.length} pending</p>
               </div>
 
@@ -584,7 +623,7 @@ export default function SuperAdmin() {
                 ].map(s => (
                   <div key={s.label} style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 14, padding: "20px 20px 18px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)", borderTop: `3px solid ${s.accent}` }}>
                     <div style={{ width: 40, height: 40, borderRadius: 10, background: s.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 14 }}>{s.icon}</div>
-                    <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 32, fontWeight: 700, color: C.text, lineHeight: 1 }}>{loading ? "—" : s.value}</div>
+                    <div className="tabular-nums" style={{ fontSize: 32, fontWeight: 700, color: C.text, lineHeight: 1 }}>{loading ? "—" : s.value}</div>
                     <div style={{ fontSize: 11, color: C.textLight, letterSpacing: "1px", textTransform: "uppercase", marginTop: 6 }}>{s.label}</div>
                   </div>
                 ))}
@@ -638,7 +677,7 @@ export default function SuperAdmin() {
             <div>
               <div style={{ marginBottom: 24 }}>
                 <p style={{ fontSize: 10, color: C.accent, fontWeight: 700, letterSpacing: "3px", textTransform: "uppercase", margin: "0 0 6px" }}>Transactions</p>
-                <h1 style={{ fontFamily: "'Roboto', sans-serif", fontSize: 34, fontWeight: 600, color: C.text, margin: 0 }}>All Orders</h1>
+                <h1 className="font-display" style={{ fontSize: 36, fontWeight: 600, color: C.text, margin: 0 }}>All Orders</h1>
                 <p style={{ fontSize: 12, color: C.textLight, margin: "4px 0 0" }}>{orders.length} total orders</p>
               </div>
 
@@ -651,7 +690,7 @@ export default function SuperAdmin() {
                 ].map(s => (
                   <div key={s.label} style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 14, padding: "20px 20px 18px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)", borderTop: `3px solid ${s.accent}` }}>
                     <div style={{ width: 40, height: 40, borderRadius: 10, background: s.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 14 }}>{s.icon}</div>
-                    <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 28, fontWeight: 700, color: C.text, lineHeight: 1 }}>{loading ? "—" : s.value}</div>
+                    <div className="tabular-nums" style={{ fontSize: 28, fontWeight: 700, color: C.text, lineHeight: 1 }}>{loading ? "—" : s.value}</div>
                     <div style={{ fontSize: 11, color: C.textLight, letterSpacing: "1px", textTransform: "uppercase", marginTop: 6 }}>{s.label}</div>
                   </div>
                 ))}
@@ -680,7 +719,7 @@ export default function SuperAdmin() {
                           <td style={{ ...td, color: C.textLight, fontSize: 11 }}>{order.createdAt ? new Date(order.createdAt).toLocaleDateString() : "—"}</td>
                           <td style={td}>
                             <select value={order.status} onChange={e => updateOrderStatus(order.id, e.target.value)}
-                              style={{ padding: "5px 10px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 11, fontFamily: "'Roboto', sans-serif", color: C.text, background: C.pageBg, cursor: "pointer" }}>
+                              style={{ padding: "5px 10px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 11, color: C.text, background: C.pageBg, cursor: "pointer" }}>
                               <option value="PENDING">Pending</option>
                               <option value="IN_TRANSIT">In Transit</option>
                               <option value="DELIVERED">Delivered</option>

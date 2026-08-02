@@ -14,7 +14,7 @@ export default function Footer() {
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-10 pb-10 border-b border-stone-100">
           <div className="max-w-xs">
             <p className="text-stone-500 text-xs leading-relaxed">
-              Nepal's first virtual art gallery — connecting local artists with collectors around the world.
+              Nepal's virtual art gallery — connecting local artists with collectors around the world.
             </p>
           </div>
 

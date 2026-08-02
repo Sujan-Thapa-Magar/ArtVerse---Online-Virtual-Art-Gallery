@@ -101,7 +101,7 @@ export default function Notifications() {
               <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
               <span className="uppercase tracking-[0.2em] font-bold text-[9px]">Activity Stream</span>
             </div>
-            <h1 className="text-stone-900 font-black tracking-tight leading-tight text-4xl">
+            <h1 className="font-display text-stone-900 font-bold leading-tight text-4xl">
               Notifications
             </h1>
           </div>

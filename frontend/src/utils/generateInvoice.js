@@ -78,7 +78,7 @@ export async function downloadInvoice(order, paymentMethod = "Direct") {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(...GREY);
-  doc.text("Nepal's First Virtual Art Gallery", taglineX, y);
+  doc.text("Nepal's Virtual Art Gallery", taglineX, y);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(22);
@@ -224,7 +224,7 @@ export async function downloadInvoice(order, paymentMethod = "Direct") {
   doc.setFontSize(9);
   doc.setTextColor(...GREY);
   doc.text("Thank you for collecting with ArtVerse.", margin, footerY + 20);
-  doc.text("hello@artverse.com  ·  Kathmandu, Nepal", margin, footerY + 34);
+  doc.text("ArtVerse  ·  Kathmandu, Nepal", margin, footerY + 34);
 
   doc.save(`ArtVerse-Invoice-ORD-${order.id}.pdf`);
 }

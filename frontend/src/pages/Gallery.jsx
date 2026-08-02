@@ -1,18 +1,34 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
-const categories = ["ALL", "RENAISSANCE", "IMPRESSIONISM", "MINIMALIST", "CONTEMPORARY", "SURREALISM"];
+const sortOptions = [
+  { key: "newest", label: "Newest" },
+  { key: "price-asc", label: "Price: Low to High" },
+  { key: "price-desc", label: "Price: High to Low" },
+];
+
+function getCurrentUser() {
+  const token = localStorage.getItem("token");
+  if (!token) return null;
+  try {
+    return JSON.parse(atob(token.split(".")[1]));
+  } catch {
+    return null;
+  }
+}
 
 export default function Gallery() {
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
+  const isArtist = getCurrentUser()?.role === "ARTIST";
   const [artworks, setArtworks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeCat, setActiveCat] = useState("ALL");
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState("newest");
   const [liked, setLiked] = useState({});
   const [hoverId, setHoverId] = useState(null);
 
@@ -47,11 +63,25 @@ export default function Gallery() {
     return u.startsWith("http") ? u : `http://localhost:8080${u}`;
   };
 
-  const filtered = artworks.filter(art => {
-    const cm = activeCat === "ALL" || (art.category || "").toUpperCase() === activeCat;
+  // Derived from what artists actually picked on upload — not a hardcoded
+  // list, so a category chip is never shown (or clicked) with zero matches.
+  const categories = useMemo(() => {
+    const found = new Set(artworks.map(a => (a.category || "").trim()).filter(Boolean));
+    return ["ALL", ...[...found].sort()];
+  }, [artworks]);
+
+  const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    return cm && ((art.title || "").toLowerCase().includes(q) || artistName(art.artist).toLowerCase().includes(q));
-  });
+    const list = artworks.filter(art => {
+      const cm = activeCat === "ALL" || art.category === activeCat;
+      return cm && ((art.title || "").toLowerCase().includes(q) || artistName(art.artist).toLowerCase().includes(q));
+    });
+    const sorted = [...list];
+    if (sortBy === "price-asc") sorted.sort((a, b) => (Number(a.price) || Infinity) - (Number(b.price) || Infinity));
+    else if (sortBy === "price-desc") sorted.sort((a, b) => (Number(b.price) || 0) - (Number(a.price) || 0));
+    else sorted.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    return sorted;
+  }, [artworks, activeCat, search, sortBy]);
 
   return (
     <div className="min-h-screen bg-cream text-stone-900 selection:bg-red-100 selection:text-red-600">
@@ -62,26 +92,43 @@ export default function Gallery() {
       <div className="relative overflow-hidden pt-12 pb-6 px-6 lg:px-12">
         <div className="max-w-7xl mx-auto text-center md:text-left flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-stone-200/60 pb-8">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 text-red-600 mb-3">
-              <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
-              <span className="uppercase tracking-[0.25em] font-bold text-[9px]">Live Collection</span>
+            <div className="flex items-center gap-3 mb-3">
+              <button
+                onClick={() => navigate("/home")}
+                className="flex-shrink-0 bg-red-50 border-none w-8 h-8 rounded-full flex items-center justify-center cursor-pointer text-red-600 text-base font-bold hover:bg-red-100 transition-colors"
+              >←</button>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 text-red-600">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
+                <span className="uppercase tracking-[0.25em] font-bold text-[9px]">Live Collection</span>
+              </div>
             </div>
-            <h1 className="text-stone-900 font-black tracking-tight leading-tight" style={{ fontSize: "clamp(32px, 5vw, 52px)" }}>
+            <h1 className="font-display text-stone-900 font-bold leading-tight" style={{ fontSize: "clamp(34px, 5vw, 56px)" }}>
               The Curated Gallery
             </h1>
             <p className="text-stone-500 text-sm max-w-md mt-2">Explore original masterpieces and contemporary discoveries directly from exceptional creators.</p>
           </div>
 
-          {/* Search Input */}
-          <div className="relative w-full md:max-w-sm self-center md:self-end">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 text-xs pointer-events-none">🔍</span>
-            <input
-              type="text"
-              placeholder="Search masterworks, artists..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="w-full py-3.5 pr-4 rounded-xl text-sm text-stone-900 outline-none border transition-all duration-300 bg-white border-stone-200 shadow-sm focus:border-red-600 focus:ring-1 focus:ring-red-600 pl-11"
-            />
+          {/* Search + Upload */}
+          <div className="flex flex-col sm:flex-row items-stretch gap-3 w-full md:w-auto self-center md:self-end">
+            <div className="relative w-full md:w-80">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 text-xs pointer-events-none">🔍</span>
+              <input
+                type="text"
+                placeholder="Search masterworks, artists..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="w-full h-full py-3.5 pr-4 rounded-xl text-sm text-stone-900 outline-none border transition-all duration-300 bg-white border-stone-200 shadow-sm focus:border-red-600 focus:ring-1 focus:ring-red-600 pl-11"
+              />
+            </div>
+
+            {isArtist && (
+              <button
+                onClick={() => navigate("/upload")}
+                className="flex-shrink-0 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold px-5 py-3.5 rounded-xl transition-colors cursor-pointer border-none whitespace-nowrap"
+              >
+                <span className="text-base leading-none">+</span> Upload Artwork
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -95,7 +142,7 @@ export default function Gallery() {
               <button
                 key={cat}
                 onClick={() => setActiveCat(cat)}
-                className={`flex-shrink-0 border-none py-2 px-4 text-[10px] font-bold tracking-[0.15em] cursor-pointer transition-all duration-300 rounded-full ${
+                className={`flex-shrink-0 border-none py-2 px-4 text-[10px] font-bold tracking-[0.15em] uppercase cursor-pointer transition-all duration-300 rounded-full ${
                   a ? "bg-red-600 text-white" : "bg-transparent text-stone-500 hover:text-red-600"
                 }`}
               >
@@ -111,14 +158,27 @@ export default function Gallery() {
         {!loading && !error && filtered.length > 0 && (
           <div className="flex items-center justify-between mb-8">
             <p className="text-stone-400 tracking-wider uppercase text-[10px] font-bold">{filtered.length} Work{filtered.length !== 1 ? "s" : ""} Unveiled</p>
+            <select
+              value={sortBy}
+              onChange={e => setSortBy(e.target.value)}
+              className="text-[11px] font-bold tracking-wider text-stone-500 bg-white border border-stone-200 rounded-full pl-4 pr-8 py-2 cursor-pointer outline-none hover:border-stone-300 transition-colors"
+            >
+              {sortOptions.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
+            </select>
           </div>
         )}
 
         {/* Loading State */}
         {loading && (
-          <div className="flex flex-col items-center justify-center py-32 gap-4">
-            <div className="w-6 h-6 rounded-full border-[2px] border-stone-200 border-t-red-600 animate-spin" />
-            <p className="text-stone-400 text-xs tracking-widest uppercase font-bold">Curating Feed…</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-12">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="flex flex-col">
+                <div className="rounded-lg bg-stone-200/70 animate-pulse mb-4" style={{ aspectRatio: "4/5" }} />
+                <div className="h-2.5 w-16 bg-stone-200/70 rounded animate-pulse mb-2" />
+                <div className="h-3.5 w-3/4 bg-stone-200/70 rounded animate-pulse mb-2" />
+                <div className="h-2.5 w-1/2 bg-stone-200/70 rounded animate-pulse" />
+              </div>
+            ))}
           </div>
         )}
 
@@ -143,7 +203,7 @@ export default function Gallery() {
         {/* Artwork Grid */}
         {!loading && !error && filtered.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-12">
-            {filtered.map(art => {
+            {filtered.map((art, i) => {
               const isLiked = liked[art.id];
               const isHov = hoverId === art.id;
               return (
@@ -152,7 +212,8 @@ export default function Gallery() {
                   onClick={() => navigate(`/artwork/${art.id}`)}
                   onMouseEnter={() => setHoverId(art.id)}
                   onMouseLeave={() => setHoverId(null)}
-                  className="cursor-pointer flex flex-col group"
+                  className="cursor-pointer flex flex-col group animate-[fadeInUp_0.4s_ease-out_backwards]"
+                  style={{ animationDelay: `${Math.min(i, 12) * 40}ms` }}
                 >
                   {/* Canvas framing */}
                   <div className="relative overflow-hidden bg-white shadow-sm border border-stone-200/60 rounded-lg transition-all duration-500 ease-out group-hover:shadow-xl group-hover:shadow-stone-950/5 mb-4" style={{ aspectRatio: "4/5" }}>

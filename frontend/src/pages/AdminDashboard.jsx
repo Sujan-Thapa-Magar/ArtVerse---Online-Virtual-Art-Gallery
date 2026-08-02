@@ -203,9 +203,15 @@ export default function AdminDashboard() {
       {/* ── Page tabs ── */}
 
       <div className="sticky top-16 z-20 flex items-center justify-between px-6 md:px-8 h-[52px] bg-cream ">
-        <span className="text-base font-bold tracking-wide text-[#1c1917]">
-          Admin Panel
-        </span>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate("/home")}
+            className="flex-shrink-0 bg-red-50 border-none w-8 h-8 rounded-full flex items-center justify-center cursor-pointer text-red-600 text-base font-bold hover:bg-red-100 transition-colors"
+          >←</button>
+          <span className="text-base font-bold tracking-wide text-[#1c1917]">
+            Admin Panel
+          </span>
+        </div>
         <div className="flex items-center gap-1">
           {["Dashboard", "System"].map((tab) => (
             <button
@@ -224,15 +230,15 @@ export default function AdminDashboard() {
       </div>
 
       {/* ── Content ── */}
-      <main className="max-w-4xl mx-auto px-4 md:px-6 py-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-8">
 
         {/* Alert Banner */}
-        <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-6">
+        <div className="flex items-center flex-wrap gap-x-3 gap-y-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-6">
           <span className="relative flex-shrink-0 w-2 h-2">
             <span className="absolute inset-0 rounded-full bg-red-500 animate-ping opacity-75" />
             <span className="relative block w-2 h-2 rounded-full bg-red-500" />
           </span>
-          <span className="flex-1 text-[13px] text-[#1c1917]">
+          <span className="flex-1 min-w-[140px] text-[13px] text-[#1c1917]">
             {loading
               ? "Loading platform data…"
               : `${artworks.length} artworks on platform · ${users.length} registered artists`}
@@ -251,41 +257,60 @@ export default function AdminDashboard() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {[
             {
               label: "TOTAL LISTED VALUE",
               value: loading ? "—" : `NPR ${stats.totalListed.toLocaleString()}`,
               sub: "All artworks combined",
               subColor: "text-emerald-500",
+              icon: "💰",
+              accent: "#f59e0b",
+              bg: "#fffbeb",
             },
             {
               label: "TOTAL ARTWORKS",
               value: loading ? "—" : stats.totalArtworks,
               sub: "On platform",
               subColor: "text-gray-400",
+              icon: "🎨",
+              accent: "#dc2626",
+              bg: "#fef2f2",
             },
             {
               label: "REGISTERED ARTISTS",
               value: loading ? "—" : stats.totalUsers,
               sub: "Active accounts",
               subColor: "text-gray-400",
+              icon: "👥",
+              accent: "#3b82f6",
+              bg: "#eff6ff",
             },
             {
               label: "FOR SALE",
               value: loading ? "—" : artworks.filter((a) => a.forSale).length,
               sub: "Listed artworks",
               subColor: "text-gray-400",
+              icon: "🛍",
+              accent: "#16a34a",
+              bg: "#f0fdf4",
             },
           ].map((card) => (
             <div
               key={card.label}
-              className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow duration-200"
+              className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow duration-200"
+              style={{ borderTop: `3px solid ${card.accent}` }}
             >
+              <div
+                className="w-10 h-10 rounded-lg flex items-center justify-center text-lg mb-4"
+                style={{ background: card.bg }}
+              >
+                {card.icon}
+              </div>
               <p className="text-[10px] font-bold tracking-[1.5px] text-gray-400 uppercase mb-2">
                 {card.label}
               </p>
-              <p className="font-display text-3xl font-bold text-[#1c1917] mb-1">
+              <p className="tabular-nums text-[28px] font-bold text-[#1c1917] mb-1 leading-none">
                 {card.value}
               </p>
               <p className={`text-[11px] ${card.subColor}`}>{card.sub}</p>
@@ -294,10 +319,10 @@ export default function AdminDashboard() {
         </div>
 
         {/* Two Column */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-8">
 
           {/* Recent Artworks */}
-          <div className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
+          <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-[15px] font-semibold text-[#1c1917]">Recent Artworks</h2>
               <button
@@ -357,7 +382,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Recent Artists */}
-          <div className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
+          <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-[15px] font-semibold text-[#1c1917]">Recent Artists</h2>
             </div>
@@ -396,10 +421,10 @@ export default function AdminDashboard() {
         </div>
 
         {/* Recent Orders + Category Breakdown */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-8">
 
           {/* Recent Orders */}
-          <div className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
+          <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-[15px] font-semibold text-[#1c1917]">Recent Orders</h2>
               <span className="text-[10px] font-bold tracking-widest text-gray-400">{orders.length} TOTAL</span>
@@ -457,7 +482,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Category Breakdown */}
-          <div className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
+          <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-[15px] font-semibold text-[#1c1917]">Category Breakdown</h2>
             </div>
@@ -468,7 +493,7 @@ export default function AdminDashboard() {
               <div className="h-52 flex items-center justify-center text-[13px] text-gray-300">No artworks yet.</div>
             ) : (
               <div className="flex items-center gap-2">
-                <ResponsiveContainer width="55%" height={200}>
+                <ResponsiveContainer width="50%" height={220}>
                   <PieChart>
                     <Pie
                       data={categoryData}
@@ -506,7 +531,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Platform Growth Chart */}
-        <div className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
+        <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
           <div className="flex items-start justify-between mb-6">
             <div>
               <h2 className="text-[15px] font-semibold text-[#1c1917]">Platform Growth</h2>
@@ -531,7 +556,7 @@ export default function AdminDashboard() {
               No activity in the last 6 months yet.
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={220}>
+            <ResponsiveContainer width="100%" height={260}>
               <BarChart data={chartData} margin={{ top: 20, right: 8, left: 8, bottom: 0 }} barGap={4}>
                 <CartesianGrid vertical={false} stroke="#f3f4f6" />
                 <XAxis

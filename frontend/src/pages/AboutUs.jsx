@@ -59,11 +59,11 @@ export default function About() {
           <span className="w-1.5 h-1.5 rounded-full bg-red-600" />
           <span className="uppercase tracking-[0.25em] font-bold text-[9px]">Our Story</span>
         </div>
-        <h1 className="font-black tracking-tight leading-tight mb-4" style={{ fontSize: "clamp(32px, 5vw, 52px)" }}>
+        <h1 className="font-display font-bold leading-tight mb-4" style={{ fontSize: "clamp(34px, 5vw, 56px)" }}>
           About ArtVerse
         </h1>
         <p className="text-stone-500 text-base leading-relaxed max-w-2xl mx-auto">
-          Nepal's first virtual art gallery — built to give local artists a real home online,
+          A Nepali virtual art gallery — built to give local artists a real home online,
           and to bring collectors closer to original work they'd otherwise never discover.
         </p>
       </div>
@@ -91,7 +91,7 @@ export default function About() {
         <div className="space-y-10">
 
           <section>
-            <h2 className="text-xl font-bold text-stone-900 mb-3">Why We Started</h2>
+            <h2 className="font-display text-2xl font-semibold text-stone-900 mb-3">Why We Started</h2>
             <p className="text-stone-600 text-sm leading-relaxed">
               For years, Nepali artists have relied on scattered Instagram posts and word-of-mouth
               to sell their work — with no dedicated platform, no secure way to handle payments,
@@ -102,7 +102,7 @@ export default function About() {
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-stone-900 mb-3">What We Offer</h2>
+            <h2 className="font-display text-2xl font-semibold text-stone-900 mb-3">What We Offer</h2>
             <p className="text-stone-600 text-sm leading-relaxed">
               A dedicated online gallery where artists can upload and showcase their work, host
               virtual exhibitions, and connect directly with buyers — all backed by a secure
@@ -112,7 +112,7 @@ export default function About() {
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-stone-900 mb-3">Our Mission</h2>
+            <h2 className="font-display text-2xl font-semibold text-stone-900 mb-3">Our Mission</h2>
             <p className="text-stone-600 text-sm leading-relaxed">
               To give every Nepali artist — regardless of where they're based — a real, professional
               platform to be discovered, and to make it simple for collectors anywhere in the world
@@ -128,7 +128,7 @@ export default function About() {
         <div className="max-w-5xl mx-auto px-6 lg:px-12">
           <div className="text-center mb-10">
             <p className="text-red-600 text-[10px] font-bold tracking-[0.25em] uppercase mb-2">What We Stand For</p>
-            <h2 className="text-2xl sm:text-3xl font-black text-stone-900">Our Core Values</h2>
+            <h2 className="font-display text-3xl sm:text-4xl font-bold text-stone-900">Our Core Values</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {values.map((v) => (
@@ -148,7 +148,7 @@ export default function About() {
       <div className="max-w-5xl mx-auto px-6 lg:px-12 py-16">
         <div className="text-center mb-10">
           <p className="text-red-600 text-[10px] font-bold tracking-[0.25em] uppercase mb-2">The Process</p>
-          <h2 className="text-2xl sm:text-3xl font-black text-stone-900">How ArtVerse Works</h2>
+          <h2 className="font-display text-3xl sm:text-4xl font-bold text-stone-900">How ArtVerse Works</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {steps.map((s) => (
@@ -164,7 +164,7 @@ export default function About() {
       {/* Built with care + CTA */}
       <div className="max-w-3xl mx-auto px-6 lg:px-12 pb-16">
         <section className="pt-6 border-t border-stone-100 mb-12">
-          <h2 className="text-xl font-bold text-stone-900 mb-3">Built With Care</h2>
+          <h2 className="font-display text-2xl font-semibold text-stone-900 mb-3">Built With Care</h2>
           <p className="text-stone-600 text-sm leading-relaxed">
             ArtVerse is an independent project, built from the ground up to serve Nepal's growing
             community of artists and art lovers. We're just getting started.
@@ -172,7 +172,7 @@ export default function About() {
         </section>
 
         <div className="bg-red-600 rounded-3xl px-8 py-10 text-center">
-          <h3 className="text-white font-black text-xl sm:text-2xl mb-2">Ready to join the gallery?</h3>
+          <h3 className="font-display text-white font-bold text-2xl sm:text-3xl mb-2">Ready to join the gallery?</h3>
           <p className="text-red-100 text-sm mb-6 max-w-md mx-auto">
             Whether you're an artist looking to showcase your work, or a collector looking to discover something new.
           </p>

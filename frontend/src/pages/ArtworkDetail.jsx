@@ -23,8 +23,6 @@ export default function ArtworkDetail() {
   const [commentText, setCommentText] = useState("");
   const [commentLoading, setCommentLoading] = useState(false);
 
-  const [orderLoading, setOrderLoading] = useState(false);
-  const [orderSuccess, setOrderSuccess] = useState(false);
 
   // Payment modal states
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -36,6 +34,9 @@ export default function ArtworkDetail() {
   const [editForm, setEditForm] = useState({});
   const [editLoading, setEditLoading] = useState(false);
   const [editMsg, setEditMsg] = useState(null);
+
+  // Delete state
+  const [deleting, setDeleting] = useState(false);
 
   // Image zoom (view-only, purely presentational — no data/logic change)
   const [isZoomed, setIsZoomed] = useState(false);
@@ -309,6 +310,33 @@ export default function ArtworkDetail() {
   };
 
 
+  // Permanent — the backend re-checks ownership, but confirm first since
+  // there's no undo and the artwork's likes/comments go with it.
+  const handleDeleteArtwork = async () => {
+    if (deleting) return;
+    if (!window.confirm(
+      `Delete "${artwork?.title}" permanently?\n\nThis cannot be undone. Its likes and comments will be removed too.`
+    )) return;
+
+    setDeleting(true);
+    try {
+      const res = await fetch(`http://localhost:8080/api/artworks/${id}`, {
+        method: "DELETE",
+        headers: authHeaders,
+      });
+      if (res.ok) {
+        navigate("/dashboard");
+      } else {
+        alert(await res.text() || "Could not delete this artwork.");
+        setDeleting(false);
+      }
+    } catch (err) {
+      console.error("Delete failed", err);
+      alert("Something went wrong while deleting.");
+      setDeleting(false);
+    }
+  };
+
   const handleEdit = async () => {
     if (!token) { navigate("/login"); return; }
     if (editLoading) return;
@@ -360,15 +388,13 @@ export default function ArtworkDetail() {
 
   const inputStyle = {
     width: "100%", padding: "10px 12px", border: "1px solid #e7e5e4",
-    borderRadius: 8, fontSize: 13, fontFamily: "Roboto, sans-serif",
-    outline: "none", color: "#1c1917", background: "#ffffff",
+    borderRadius: 8, fontSize: 13, outline: "none", color: "#1c1917", background: "#ffffff",
     boxSizing: "border-box",
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-cream gap-4"
-        style={{ fontFamily: "'Roboto', sans-serif" }}>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-cream gap-4">
         <div className="w-10 h-10 border-4 border-[#dc2626] border-t-transparent rounded-full animate-spin" />
         <p className="text-sm text-[#78716c] tracking-widest uppercase">Loading artwork…</p>
       </div>
@@ -377,8 +403,7 @@ export default function ArtworkDetail() {
 
   if (error || !artwork) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-cream gap-5"
-        style={{ fontFamily: "'Roboto', sans-serif" }}>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-cream gap-5">
         <p className="text-[#78716c] text-sm">{error || "Artwork not found."}</p>
         <button onClick={() => navigate("/gallery")}
           className="px-6 py-2.5 bg-red-600 text-white text-xs font-bold tracking-widest rounded-full hover:bg-red-700 transition-colors cursor-pointer">
@@ -403,8 +428,16 @@ export default function ArtworkDetail() {
         <div className="flex gap-2">
           {isOwner && (
             <button onClick={() => { setShowEdit(v => !v); setEditMsg(null); }}
+              title="Edit artwork"
               className="w-9 h-9 rounded-full bg-white hover:bg-stone-100 flex items-center justify-center text-base text-[#1c1917] transition-colors cursor-pointer border border-stone-200">
               ✏️
+            </button>
+          )}
+          {isOwner && (
+            <button onClick={handleDeleteArtwork} disabled={deleting}
+              title="Delete artwork"
+              className="w-9 h-9 rounded-full bg-white hover:bg-red-50 hover:border-red-300 hover:text-red-600 flex items-center justify-center text-base text-stone-400 transition-colors cursor-pointer border border-stone-200 disabled:opacity-50 disabled:cursor-not-allowed">
+              🗑
             </button>
           )}
           <button onClick={handleLike} disabled={likeLoading}
@@ -542,8 +575,7 @@ export default function ArtworkDetail() {
                 <p className="text-[10px] font-bold tracking-[2px] text-[#dc2626] uppercase mb-2">
                   {artwork.forSale ? "Available Now" : "Already Sold"}
                 </p>
-                <h1 className="text-[28px] md:text-[32px] font-bold text-[#1c1917] leading-tight mb-1"
-                  style={{ fontFamily: "'Roboto', sans-serif" }}>
+                <h1 className="text-[28px] md:text-[32px] font-bold text-[#1c1917] leading-tight mb-1">
                   {artwork.title}
                 </h1>
                 <p className="text-[12px] text-[#78716c]">
@@ -583,8 +615,8 @@ export default function ArtworkDetail() {
             <div className="border-t border-[#e7e5e4] my-4" />
 
             {/* Artist Row */}
-            <div className="flex items-center justify-between bg-white border border-[#e7e5e4] rounded-xl px-4 py-3 mb-4">
-              <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between flex-wrap gap-3 bg-white border border-[#e7e5e4] rounded-xl px-4 py-3 mb-4">
+              <div className="flex items-center gap-3 min-w-0">
                 <Avatar
                   name={artistName}
                   photo={artwork.artist?.profilePhoto}
@@ -592,13 +624,13 @@ export default function ArtworkDetail() {
                   className="text-base"
                   bgColor="#1c1917"
                 />
-                <div>
-                  <p className="text-[13px] font-bold text-[#1c1917] mb-0.5">{artistName}</p>
+                <div className="min-w-0">
+                  <p className="text-[13px] font-bold text-[#1c1917] mb-0.5 truncate">{artistName}</p>
                   <p className="text-[11px] text-[#78716c]">Verified Artist</p>
                 </div>
               </div>
               {!isOwner && (
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   <button onClick={handleFollow} disabled={followLoading}
                     className={`px-4 py-2 rounded-full text-[11px] font-bold tracking-wide transition-all duration-200 cursor-pointer ${
                       following
@@ -618,11 +650,9 @@ export default function ArtworkDetail() {
             {/* Buy / Already Sold — hide for owner */}
             {!isOwner && (
               artwork.forSale ? (
-                <button onClick={openPaymentModal} disabled={orderLoading || orderSuccess}
-                  className={`w-full py-4 rounded-xl text-[13px] font-bold tracking-[2px] transition-all duration-200 cursor-pointer border-none mb-3 ${
-                    orderSuccess ? "bg-[#166534] text-white" : "bg-red-600 text-white hover:bg-red-700 active:scale-[0.99]"
-                  }`}>
-                  {orderSuccess ? "✓ ACQUIRED — REDIRECTING..." : orderLoading ? "PROCESSING..." : "ACQUIRE THIS PIECE"}
+                <button onClick={openPaymentModal}
+                  className="w-full py-4 rounded-xl text-[13px] font-bold tracking-[2px] transition-all duration-200 cursor-pointer border-none mb-3 bg-red-600 text-white hover:bg-red-700 active:scale-[0.99]">
+                  ACQUIRE THIS PIECE
                 </button>
               ) : (
                 <div className="w-full py-3.5 rounded-xl bg-white border border-[#e7e5e4] text-[#78716c] text-[13px] font-semibold tracking-wider text-center mb-3">
@@ -679,13 +709,12 @@ export default function ArtworkDetail() {
               <div className="w-9 h-9 rounded-full bg-[#1c1917] text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
                 {token ? "Y" : "?"}
               </div>
-              <div className="flex-1 flex gap-2">
+              <div className="flex-1 min-w-0 flex gap-2">
                 <input type="text" placeholder="Sign the guestbook…" value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleComment()}
                   disabled={commentLoading}
-                  className="flex-1 px-4 py-2.5 bg-white border border-[#e7e5e4] rounded-full text-[13px] text-[#1c1917] placeholder-[#a8a29e] outline-none focus:border-[#dc2626] transition-all"
-                  style={{ fontFamily: "'Roboto', sans-serif" }} />
+                  className="flex-1 min-w-0 px-4 py-2.5 bg-white border border-[#e7e5e4] rounded-full text-[13px] text-[#1c1917] placeholder-[#a8a29e] outline-none focus:border-[#dc2626] transition-all" />
                 <button onClick={handleComment} disabled={commentLoading || !commentText.trim()}
                   className="px-4 py-2.5 bg-red-600 text-white text-[12px] font-bold rounded-full hover:bg-red-700 active:scale-95 transition-all disabled:opacity-40 cursor-pointer border-none">
                   {commentLoading ? "…" : "POST"}
@@ -776,7 +805,7 @@ export default function ArtworkDetail() {
                   <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", color: "#dc2626", textTransform: "uppercase", marginBottom: 6 }}>
                     Complete Purchase
                   </p>
-                  <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 22, fontWeight: 600, color: "#1c1917", margin: 0 }}>
+                  <p className="font-display" style={{ fontSize: 24, fontWeight: 600, color: "#1c1917", margin: 0 }}>
                     Choose Payment Method
                   </p>
                   <p style={{ fontSize: 13, color: "#1c1917", fontWeight: 700, marginTop: 6 }}>
@@ -791,8 +820,7 @@ export default function ArtworkDetail() {
                       display: "flex", alignItems: "center", gap: 12, padding: "14px 16px",
                       borderRadius: 12, border: selectedMethod === "eSewa" ? "2px solid #16a34a" : "2px solid #e7e5e4",
                       background: selectedMethod === "eSewa" ? "#f0fdf4" : "#fff",
-                      cursor: "pointer", textAlign: "left", fontFamily: "Roboto, sans-serif",
-                    }}
+                      cursor: "pointer", textAlign: "left", }}
                   >
                     <div style={{
                       width: 40, height: 40, borderRadius: 10, overflow: "hidden",
@@ -813,8 +841,7 @@ export default function ArtworkDetail() {
                       display: "flex", alignItems: "center", gap: 12, padding: "14px 16px",
                       borderRadius: 12, border: selectedMethod === "Khalti" ? "2px solid #7c3aed" : "2px solid #e7e5e4",
                       background: selectedMethod === "Khalti" ? "#F5F3FF" : "#fff",
-                      cursor: "pointer", textAlign: "left", fontFamily: "Roboto, sans-serif",
-                    }}
+                      cursor: "pointer", textAlign: "left", }}
                   >
                     <div style={{
                       width: 40, height: 40, borderRadius: 10, overflow: "hidden",
@@ -839,8 +866,7 @@ export default function ArtworkDetail() {
                     color: selectedMethod ? "#fff" : "#a8a29e",
                     fontSize: 13, fontWeight: 700, letterSpacing: "1px",
                     cursor: selectedMethod ? "pointer" : "not-allowed",
-                    fontFamily: "Roboto, sans-serif",
-                  }}
+                    }}
                 >
                   {selectedMethod ? `PAY WITH ${selectedMethod.toUpperCase()}` : "SELECT A PAYMENT METHOD"}
                 </button>
@@ -850,8 +876,7 @@ export default function ArtworkDetail() {
                   style={{
                     width: "100%", padding: 12, marginTop: 8, borderRadius: 12, border: "none",
                     background: "transparent", color: "#78716c", fontSize: 12, fontWeight: 600,
-                    cursor: "pointer", fontFamily: "Roboto, sans-serif",
-                  }}
+                    cursor: "pointer", }}
                 >
                   Cancel
                 </button>

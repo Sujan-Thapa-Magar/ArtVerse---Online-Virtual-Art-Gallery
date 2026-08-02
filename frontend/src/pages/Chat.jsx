@@ -67,8 +67,7 @@ function Avatar({ name, photo, size = 42 }) {
       width: size, height: size, borderRadius: "50%", flexShrink: 0,
       background: `linear-gradient(135deg, ${C.accent} 0%, #ef4444 100%)`,
       color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
-      fontWeight: 700, fontSize: size * 0.38, fontFamily: "'Roboto', sans-serif",
-      boxShadow: "0 2px 8px rgba(220, 38, 38, 0.2)",
+      fontWeight: 700, fontSize: size * 0.38, boxShadow: "0 2px 8px rgba(220, 38, 38, 0.2)",
     }}>
       {name?.[0]?.toUpperCase() || "?"}
     </div>
@@ -83,8 +82,12 @@ export default function Chat() {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
   const messagesEndRef = useRef(null);
   const pollRef = useRef(null);
+  const searchDebounceRef = useRef(null);
   const inputRef = useRef(null);
 
   const token = getToken();
@@ -109,11 +112,26 @@ export default function Chat() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  useEffect(() => {
+    clearTimeout(searchDebounceRef.current);
+    if (!searchQuery.trim()) return;
+    searchDebounceRef.current = setTimeout(() => searchUsers(searchQuery.trim()), 300);
+    return () => clearTimeout(searchDebounceRef.current);
+  }, [searchQuery]);
+
   async function fetchPartners() {
     try {
       const res = await fetch(`${API}/api/messages/conversations`, { headers });
       if (res.ok) setPartners(await res.json());
     } catch (err) { console.error(err); }
+  }
+
+  async function searchUsers(q) {
+    try {
+      const res = await fetch(`${API}/api/users/search?q=${encodeURIComponent(q)}`, { headers });
+      if (res.ok) setSearchResults(await res.json());
+    } catch (err) { console.error(err); }
+    finally { setSearching(false); }
   }
 
   async function fetchUserAndOpen(uid) {
@@ -162,34 +180,110 @@ export default function Chat() {
 
   function openChat(user) {
     setSelectedUser(user);
+    setSearchQuery("");
+    setSearchResults([]);
     navigate(`/chat/${user.id}`);
   }
+
+  const showingSearch = searchQuery.trim().length > 0;
+  const existingPartnerIds = new Set(partners.map(p => p.id));
 
   return (
     <div style={{ background: C.pageBg, color: C.text, height: "100vh", overflow: "hidden" }}>
       <div style={{ display: "flex", height: "100%" }}>
 
-      {/* ── Sidebar ── */}
-      <div style={{ width: 300, minWidth: 300, background: C.sidebar, borderRight: `1px solid ${C.sidebarBorder}`, display: "flex", flexDirection: "column" }}
-        className="hidden sm:flex">
+      {/* ── Sidebar — on mobile this IS the screen until a conversation is picked ── */}
+      <div style={{ background: C.sidebar, borderRight: `1px solid ${C.sidebarBorder}`, flexDirection: "column" }}
+        className={selectedUser ? "hidden sm:flex sm:w-[300px] sm:min-w-[300px]" : "flex w-full sm:w-[300px] sm:min-w-[300px]"}>
 
         {/* Sidebar header */}
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "18px 16px", borderBottom: `1px solid ${C.sidebarBorder}` }}>
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => (window.history.state?.idx > 0 ? navigate(-1) : navigate("/home"))}
             style={{ background: C.accentBg, border: "none", width: 32, height: 32, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.accent, fontSize: 16, fontWeight: 700 }}
           >←</button>
-          <h2 style={{ fontFamily: "'Roboto', sans-serif", fontSize: 22, fontWeight: 600, color: C.text, margin: 0, letterSpacing: "0.03em" }}>
+          <h2 style={{ fontSize: 22, fontWeight: 600, color: C.text, margin: 0, letterSpacing: "0.03em" }}>
             Messages
           </h2>
         </div>
 
-        {/* Partner list */}
-        {partners.length === 0 ? (
+        {/* Search bar — find anyone to start a new chat with */}
+        <div style={{ padding: "12px 16px", borderBottom: `1px solid ${C.sidebarBorder}` }}>
+          <div style={{ position: "relative" }}>
+            <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: C.textLight }}>🔍</span>
+            <input
+              type="text"
+              placeholder="Search people to chat…"
+              value={searchQuery}
+              onChange={(e) => {
+                const v = e.target.value;
+                setSearchQuery(v);
+                if (!v.trim()) setSearchResults([]);
+                else setSearching(true);
+              }}
+              style={{
+                width: "100%", boxSizing: "border-box", padding: "9px 12px 9px 32px",
+                border: `1.5px solid ${C.border}`, borderRadius: 20, fontSize: 13,
+                color: C.text, outline: "none", background: C.inputBg, transition: "border 0.2s",
+              }}
+              onFocus={e => e.target.style.borderColor = C.accent}
+              onBlur={e => e.target.style.borderColor = C.border}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => { setSearchQuery(""); setSearchResults([]); }}
+                style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: C.textLight, fontSize: 14, lineHeight: 1 }}
+              >✕</button>
+            )}
+          </div>
+        </div>
+
+        {/* Search results */}
+        {showingSearch ? (
+          <div style={{ flex: 1, overflowY: "auto" }}>
+            {searching ? (
+              <div style={{ padding: "24px 20px", textAlign: "center", color: C.textLight, fontSize: 12 }}>Searching…</div>
+            ) : searchResults.length === 0 ? (
+              <div style={{ padding: "24px 20px", textAlign: "center", color: C.textLight, fontSize: 13 }}>
+                No people found for "{searchQuery.trim()}"
+              </div>
+            ) : (
+              searchResults.map((person) => (
+                <div
+                  key={person.id}
+                  onClick={() => openChat(person)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 12,
+                    padding: "14px 16px", cursor: "pointer",
+                    borderBottom: `1px solid ${C.sidebarBorder}`,
+                    transition: "background 0.15s",
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#faf6f0"}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                >
+                  <Avatar name={person.name} photo={person.profilePhoto} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: C.text, margin: "0 0 2px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {person.name}
+                    </p>
+                    <p style={{ fontSize: 11, color: C.textLight, margin: 0, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                      {person.role}
+                    </p>
+                  </div>
+                  {existingPartnerIds.has(person.id) ? (
+                    <span style={{ fontSize: 10, color: C.textLight }}>Chatting</span>
+                  ) : (
+                    <span style={{ fontSize: 10, color: C.accent, fontWeight: 700 }}>+ Chat</span>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        ) : partners.length === 0 ? (
           <div style={{ padding: "40px 20px", textAlign: "center", color: C.textLight, fontSize: 13, lineHeight: 1.9 }}>
             <div style={{ fontSize: 36, marginBottom: 12, opacity: 0.5 }}>💬</div>
             <p style={{ margin: 0 }}>No conversations yet.</p>
-            <p style={{ margin: "4px 0 0", fontSize: 12 }}>Message an artist from their artwork page.</p>
+            <p style={{ margin: "4px 0 0", fontSize: 12 }}>Search above to find someone to chat with.</p>
           </div>
         ) : (
           <div style={{ flex: 1, overflowY: "auto" }}>
@@ -226,11 +320,12 @@ export default function Chat() {
         )}
       </div>
 
-      {/* ── Chat Window ── */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", background: C.windowBg, minHeight: 0 }}>
+      {/* ── Chat Window — on mobile this only appears once a conversation is picked ── */}
+      <div style={{ flex: 1, flexDirection: "column", background: C.windowBg, minHeight: 0 }}
+        className={selectedUser ? "flex" : "hidden sm:flex"}>
 
         {!selectedUser ? (
-          /* Empty state */
+          /* Empty state (sm+ only — mobile shows the list instead) */
           <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 32 }}>
             <div style={{ width: 64, height: 64, borderRadius: "50%", background: C.accentBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>💬</div>
             <p style={{ color: C.textMid, fontSize: 14, textAlign: "center", maxWidth: 260, lineHeight: 1.7 }}>
@@ -241,6 +336,11 @@ export default function Chat() {
           <>
             {/* Chat Header */}
             <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 20px", background: C.headerBg, borderBottom: `1px solid ${C.border}`, boxShadow: "0 1px 6px rgba(0,0,0,0.04)" }}>
+              <button
+                onClick={() => { setSelectedUser(null); navigate("/chat"); }}
+                className="sm:hidden"
+                style={{ background: C.accentBg, border: "none", width: 32, height: 32, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.accent, fontSize: 16, fontWeight: 700, flexShrink: 0 }}
+              >←</button>
               <Avatar name={selectedUser.name} photo={selectedUser.profilePhoto} size={44} />
               <div style={{ flex: 1 }}>
                 <p style={{ fontSize: 15, fontWeight: 700, color: C.text, margin: "0 0 2px" }}>{selectedUser.name}</p>
@@ -315,8 +415,7 @@ export default function Chat() {
                 disabled={sending}
                 style={{
                   flex: 1, padding: "11px 18px", border: `1.5px solid ${C.border}`,
-                  borderRadius: 24, fontSize: 14, fontFamily: "'Roboto', sans-serif",
-                  color: C.text, outline: "none", background: C.inputBg, transition: "border 0.2s",
+                  borderRadius: 24, fontSize: 14, color: C.text, outline: "none", background: C.inputBg, transition: "border 0.2s",
                 }}
                 onFocus={e => e.target.style.borderColor = C.accent}
                 onBlur={e => e.target.style.borderColor = C.border}
@@ -330,7 +429,7 @@ export default function Chat() {
                   color: (sending || !newMessage.trim()) ? C.textLight : "#fff",
                   fontSize: 12, fontWeight: 700, letterSpacing: "1px",
                   cursor: (sending || !newMessage.trim()) ? "not-allowed" : "pointer",
-                  fontFamily: "'Roboto', sans-serif", transition: "background 0.2s, transform 0.1s",
+                  transition: "background 0.2s, transform 0.1s",
                   whiteSpace: "nowrap",
                 }}
                 onMouseEnter={e => { if (!sending && newMessage.trim()) e.currentTarget.style.background = C.accentHover; }}

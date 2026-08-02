@@ -6,6 +6,7 @@ import Gallery from "./pages/Gallery";
 import ArtworkUpload from "./pages/ArtworkUpload";
 import ArtworkDetail from "./pages/ArtworkDetail";
 import VirtualExhibition from "./pages/VirtualExhibition";
+import ExhibitionList from "./pages/ExhibitionList";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ArtistDashboard from "./pages/ArtistDashboard";
 import BuyerProfile from "./pages/BuyerProfile";
@@ -34,6 +35,7 @@ function App() {
           <Route path="/about-us" element={< About/>} />
           <Route path="/contact-us" element={<ContactUs />} />
           <Route path="/artwork/:id" element={<ArtworkDetail />} />
+          <Route path="/exhibition" element={<ExhibitionList />} />
           <Route path="/exhibition/:id" element={<VirtualExhibition />} />
 
           {/* Protected — requires login */}
