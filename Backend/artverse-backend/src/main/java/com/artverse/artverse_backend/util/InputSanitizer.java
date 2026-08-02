@@ -3,17 +3,7 @@ package com.artverse.artverse_backend.util;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-/**
- * Strips HTML markup from user-supplied free text before it's persisted.
- *
- * The frontend is React, which escapes all rendered text by default, so
- * this is defense-in-depth rather than the primary XSS control — it exists
- * so stored data stays inert even if it's ever rendered somewhere other
- * than the current React app (an admin tool, an exported report, a future
- * API consumer). We strip tags rather than HTML-entity-encoding the text,
- * since encoding here would double-escape once React renders it — e.g.
- * "AT&T" would show up on screen as the literal text "AT&amp;T".
- */
+
 public final class InputSanitizer {
 
     private static final Pattern HTML_TAG = Pattern.compile("<[^>]*>");

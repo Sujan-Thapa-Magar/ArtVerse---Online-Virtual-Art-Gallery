@@ -63,11 +63,18 @@ public class LikeController {
 
     @GetMapping("/{artworkId}")
     public ResponseEntity<?> getLikeStatus(@PathVariable Long artworkId, Authentication auth) {
-        User user = userRepository.findByEmail(auth.getName())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        boolean liked = likeRepository.existsByUser_IdAndArtwork_Id(user.getId(), artworkId);
         long count = likeRepository.countByArtwork_Id(artworkId);
+
+        // This endpoint is public so guests can see like counts — only
+        // resolve "liked by me" when there's an actual logged-in user.
+        boolean liked = false;
+        if (auth != null && auth.isAuthenticated()) {
+            Optional<User> user = userRepository.findByEmail(auth.getName());
+            if (user.isPresent()) {
+                liked = likeRepository.existsByUser_IdAndArtwork_Id(user.get().getId(), artworkId);
+            }
+        }
+
         return ResponseEntity.ok(Map.of("liked", liked, "likeCount", count));
     }
 

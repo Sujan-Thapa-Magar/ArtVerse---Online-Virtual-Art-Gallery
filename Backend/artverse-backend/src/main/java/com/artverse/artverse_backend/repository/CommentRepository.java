@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface CommentRepository extends JpaRepository<Comment, Long> {
     List<Comment> findByArtwork_IdOrderByCreatedAtDesc(Long artworkId);
+    void deleteByArtwork_Id(Long artworkId);
 }

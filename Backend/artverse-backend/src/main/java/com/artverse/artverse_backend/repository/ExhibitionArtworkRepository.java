@@ -9,4 +9,5 @@ public interface ExhibitionArtworkRepository extends JpaRepository<ExhibitionArt
     List<ExhibitionArtwork> findByExhibition_Id(Long exhibitionId);
     Optional<ExhibitionArtwork> findByExhibition_IdAndArtwork_Id(Long exhibitionId, Long artworkId);
     void deleteByExhibition_IdAndArtwork_Id(Long exhibitionId, Long artworkId);
+    void deleteByArtwork_Id(Long artworkId);
 }

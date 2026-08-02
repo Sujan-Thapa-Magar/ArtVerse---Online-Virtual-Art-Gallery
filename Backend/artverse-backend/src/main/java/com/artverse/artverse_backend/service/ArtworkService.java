@@ -4,10 +4,15 @@ import com.artverse.artverse_backend.dto.ArtworkUploadRequest;
 import com.artverse.artverse_backend.model.Artwork;
 import com.artverse.artverse_backend.model.User;
 import com.artverse.artverse_backend.repository.ArtworkRepository;
+import com.artverse.artverse_backend.repository.CommentRepository;
+import com.artverse.artverse_backend.repository.ExhibitionArtworkRepository;
+import com.artverse.artverse_backend.repository.LikeRepository;
+import com.artverse.artverse_backend.repository.OrderRepository;
 import com.artverse.artverse_backend.repository.UserRepository;
 import com.artverse.artverse_backend.util.InputSanitizer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -26,6 +31,18 @@ public class ArtworkService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private ExhibitionArtworkRepository exhibitionArtworkRepository;
+
+    @Autowired
+    private CommentRepository commentRepository;
+
+    @Autowired
+    private LikeRepository likeRepository;
+
+    @Autowired
+    private OrderRepository orderRepository;
 
     public Artwork uploadArtwork(ArtworkUploadRequest request,
                                  MultipartFile imageFile,
@@ -85,6 +102,7 @@ public class ArtworkService {
         return artworkRepository.findByArtistId(artistId);
     }
 
+    @Transactional
     public void deleteArtwork(Long id, String artistEmail) {
         Artwork artwork = artworkRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Artwork not found"));
@@ -93,7 +111,33 @@ public class ArtworkService {
             throw new RuntimeException("You are not allowed to delete this artwork");
         }
 
+        // Orders are a financial record — a completed sale must not silently
+        // disappear (or take a buyer's purchase history/invoice with it) just
+        // because the artist deletes the listing afterward.
+        if (orderRepository.existsByArtwork_Id(id)) {
+            throw new RuntimeException(
+                    "This artwork has already been sold and cannot be deleted, to preserve order history.");
+        }
+
+        // Everything else here is scoped entirely to this artwork with no
+        // independent meaning once it's gone, so it's safe to cascade.
+        exhibitionArtworkRepository.deleteByArtwork_Id(id);
+        commentRepository.deleteByArtwork_Id(id);
+        likeRepository.deleteByArtwork_Id(id);
+
         artworkRepository.deleteById(id);
+
+        // Best-effort cleanup of the uploaded file — losing the DB row is the
+        // real failure mode here, an orphaned file on disk is not worth
+        // rolling back the transaction over.
+        if (artwork.getImageUrl() != null) {
+            try {
+                String filename = artwork.getImageUrl().substring(artwork.getImageUrl().lastIndexOf('/') + 1);
+                Files.deleteIfExists(Paths.get(UPLOAD_DIR).resolve(filename));
+            } catch (Exception e) {
+                System.out.println("Could not delete artwork image file: " + e.getMessage());
+            }
+        }
     }
 
     public Artwork updateArtwork(Long id, String artistEmail, ArtworkUploadRequest request) {

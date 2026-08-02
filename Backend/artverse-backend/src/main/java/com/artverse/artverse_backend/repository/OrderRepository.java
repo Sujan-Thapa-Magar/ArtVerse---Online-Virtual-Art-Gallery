@@ -8,4 +8,5 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Order> findByBuyer_IdOrderByCreatedAtDesc(Long buyerId);
     long countByBuyer_Id(Long buyerId);
     List<Order> findByArtwork_Artist_IdOrderByCreatedAtDesc(Long artistId);
+    boolean existsByArtwork_Id(Long artworkId);
 }

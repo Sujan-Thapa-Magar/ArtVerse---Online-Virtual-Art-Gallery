@@ -10,4 +10,5 @@ public interface LikeRepository extends JpaRepository<Like, Long> {
     long countByArtwork_Id(Long artworkId);
     boolean existsByUser_IdAndArtwork_Id(Long userId, Long artworkId);
     List<Like> findByUser_Id(Long userId);
+    void deleteByArtwork_Id(Long artworkId);
 }

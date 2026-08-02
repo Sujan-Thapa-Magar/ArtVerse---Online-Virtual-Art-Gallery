@@ -61,12 +61,19 @@ public class FollowController {
 
     @GetMapping("/{artistId}")
     public ResponseEntity<?> getFollowStatus(@PathVariable Long artistId, Authentication auth) {
-        User follower = userRepository.findByEmail(auth.getName())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        boolean following = followRepository.existsByFollower_IdAndFollowing_Id(
-                follower.getId(), artistId);
         long count = followRepository.countByFollowing_Id(artistId);
+
+        // This endpoint is public so guests can see follower counts — only
+        // resolve "following by me" when there's an actual logged-in user.
+        boolean following = false;
+        if (auth != null && auth.isAuthenticated()) {
+            Optional<User> follower = userRepository.findByEmail(auth.getName());
+            if (follower.isPresent()) {
+                following = followRepository.existsByFollower_IdAndFollowing_Id(
+                        follower.get().getId(), artistId);
+            }
+        }
+
         return ResponseEntity.ok(Map.of("following", following, "followerCount", count));
     }
 

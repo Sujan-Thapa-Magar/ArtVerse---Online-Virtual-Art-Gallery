@@ -17,7 +17,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 /**
  * Self-service profile management — every logged-in user (buyer, artist,
@@ -38,6 +40,22 @@ public class UserController {
     private BCryptPasswordEncoder passwordEncoder;
 
     private final String UPLOAD_DIR = "/media/sujan/BC6C5E616C5E168C/ArtVerse/Backend/artverse-backend/uploads/";
+
+    // At least one uppercase letter, one lowercase letter, and one special character.
+    private static final Pattern PASSWORD_POLICY =
+            Pattern.compile("^(?=.*[a-z])(?=.*[A-Z])(?=.*[^A-Za-z0-9]).+$");
+
+    @GetMapping("/search")
+    public ResponseEntity<List<User>> searchUsers(
+            @RequestParam("q") String query,
+            Authentication authentication) {
+        if (query == null || query.isBlank()) {
+            return ResponseEntity.ok(List.of());
+        }
+        List<User> results = userRepository.findTop20ByNameContainingIgnoreCaseAndEmailNot(
+                query.trim(), authentication.getName());
+        return ResponseEntity.ok(results);
+    }
 
     @GetMapping("/me")
     public ResponseEntity<?> getMe(Authentication authentication) {
@@ -74,6 +92,9 @@ public class UserController {
                 }
                 if (newPassword.length() < 6) {
                     throw new RuntimeException("New password must be at least 6 characters.");
+                }
+                if (!PASSWORD_POLICY.matcher(newPassword).matches()) {
+                    throw new RuntimeException("New password must contain an uppercase letter, a lowercase letter, and a special character.");
                 }
                 user.setPassword(passwordEncoder.encode(newPassword));
             }
